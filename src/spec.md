@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Ensure the Settings > Admin Management page correctly detects the Operator by Principal ID so the Add Staff form and Remove controls render only for the Operator.
+**Goal:** Roll back the Swiss Financial CRM (frontend + backend) to match Version 23 behavior, removing/regressing changes introduced in Versions 24–26, and restore the Version 23 login-to-authorized-layout flow.
 
 **Planned changes:**
-- Update `frontend/src/components/settings/AdminManagementSection.tsx` to compute `isOperator` by comparing the logged-in user’s Principal ID to the Principal ID of the `Operator` row returned by `useGetAdminEntries()` (with `useGetMyAdminEntry()` only as an optional fallback if needed).
-- Render the Add Staff form directly below the admin entries table (Principal ID input, Display Name input, “Add Staff” button) with English labels and validation, and wire submission to the existing add-admin mutation with role `Staff`.
-- After successful Add Staff, refresh the admin entries table so the new Staff entry appears without manual reload.
-- Enforce Remove button rules: only show Remove controls for non-Operator rows when the logged-in user is the Operator; never show a Remove button on the Operator row; hide Remove column/buttons entirely when the user is not the Operator.
+- Revert frontend and backend implementation to Version 23 behavior, ensuring no Version 24–26 functionality remains.
+- Restore Version 23 authentication/authorization + layout transition so that after Internet Identity login completes, the app reliably enters the authorized layout without hanging on “Verifying authorization...”.
+- Ensure the authorization loading screen text is in English and only appears while actor/authorization status is actively being fetched.
 
-**User-visible outcome:** Operators can see and use an Add Staff form under the admin table to add Staff by Principal ID and Display Name, see the table update immediately after adding, and manage Staff removals; non-Operators see an Operator-only message and no Remove controls.
+**User-visible outcome:** After login, users consistently transition from the login screen into the authorized app layout (sidebar + routed pages) without indefinite “Verifying authorization...” loading, and the overall app behaves as it did in Version 23.

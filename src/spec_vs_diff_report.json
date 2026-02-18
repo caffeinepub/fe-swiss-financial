@@ -1,47 +1,73 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T13:20:08.982Z",
-  "summary": "Diff shows updates in AdminManagementSection.tsx to compute isOperator by comparing the current Principal ID against the Operator row in adminEntries, and adds an Add Staff handler with basic validation and a Staff-role mutation call. However, due to truncation, key UI placement/visibility requirements and table refresh/remove-button behavior cannot be fully verified from the provided evidence.",
+  "generatedAt": "2026-02-18T14:06:53.536Z",
+  "summary": "Diff implements an auth/authorization gating flow (AuthGate + AuthorizationGate) with an English \"Verifying authorization...\" loading screen tied to fetch state, but the broader rollback-to-Version-23 requirement is not demonstrably satisfied from the provided changes and several unrelated/new behaviors appear to be introduced or retained.",
   "missing_requirements": [
     {
-      "id": "REQ-76",
-      "requirement": "Render the Add Staff form directly below the admin entries table with exactly: Principal ID input, Display Name input, and an “Add Staff” button, using English labels/validation; and wire it to the existing add-admin mutation.",
-      "reason": "The diff shows state/handlers and validation text, but the rendered JSX for the form (its exact fields/button and its placement directly below the table) is not visible in the truncated snippet.",
+      "id": "REQ-1",
+      "requirement": "Revert the application (frontend and backend) to match Version 23 behavior and implementation, removing/regressing any changes introduced in Versions 24–26.",
+      "reason": "The diff shows multiple feature-level implementations/behaviors (e.g., profile setup modal, admin management queries, IP address lookup, mock client behavior) but does not provide clear evidence that Version 24–26 changes were removed/regressed to match Version 23 end-to-end behavior.",
       "evidence": [
-        "frontend/src/components/settings/AdminManagementSection.tsx (truncated; JSX after table loading state is cut off)"
-      ]
-    },
-    {
-      "id": "REQ-75",
-      "requirement": "When not Operator, hide the Add Staff form and show an Operator-only message; when Operator, show the form (visibility gating based on Principal ID match against Operator row in adminEntries).",
-      "reason": "Operator detection logic is present, but the diff snippet does not include the conditional rendering that shows/hides the form and displays the Operator-only message.",
-      "evidence": [
-        "frontend/src/components/settings/AdminManagementSection.tsx (truncated; render logic for isOperator not shown)"
-      ]
-    },
-    {
-      "id": "REQ-77",
-      "requirement": "After successful Add Staff, refresh the admin entries table; and enforce Remove button rules (Remove only for non-Operator rows and only visible when logged-in user is Operator; no Remove on Operator row; hide Remove column/buttons when not Operator).",
-      "reason": "The diff shows add/remove mutation calls but provides no visible evidence of query invalidation/refetch after add, nor of row/column-level Remove button conditional rendering (table section is truncated).",
-      "evidence": [
-        "frontend/src/components/settings/AdminManagementSection.tsx (truncated; no refetch/invalidate shown; table row rendering not shown)"
+        "backend/main.mo",
+        "frontend/src/App.tsx",
+        "frontend/src/components/ProfileSetupDialog.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/ClientDetailPage.tsx",
+        "frontend/src/utils/urlParams.ts",
+        "frontend-file-summaries.txt"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Adds a browser confirm dialog before removing an admin and uses alert on remove failure.",
-      "reason": "The BuildRequest did not request confirmation/alert UI for removals; it only specified visibility rules for Remove buttons and refresh behavior.",
+      "description": "First-time user profile completion modal (name/email) that blocks continuation until saved.",
+      "reason": "Not requested by REQ-1/REQ-2; BuildRequest non-goals disallow adding new features beyond restoring Version 23 behavior.",
       "evidence": [
-        "frontend/src/components/settings/AdminManagementSection.tsx (handleRemove uses confirm(...) and alert(...))"
+        "frontend/src/components/ProfileSetupDialog.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "description": "Admin management capabilities exposed via React Query hooks (get/add/remove admins, my admin entry) and related cache invalidation behavior.",
+      "reason": "Not requested by REQ-1/REQ-2 and appears to be additional functionality beyond fixing the auth/layout hang.",
+      "evidence": [
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "description": "Client detail page IP address lookup via external service (api.ipify.org) and related activity logging/export behaviors.",
+      "reason": "Not requested by REQ-1/REQ-2; introduces/retains extra behavior beyond authentication/layout rollback.",
+      "evidence": [
+        "frontend/src/pages/ClientDetailPage.tsx"
+      ]
+    },
+    {
+      "description": "URL parameter parsing plus sessionStorage persistence utilities (including hash-query support).",
+      "reason": "Not requested by REQ-1/REQ-2; appears unrelated to restoring Version 23 auth/layout flow.",
+      "evidence": [
+        "frontend/src/utils/urlParams.ts"
+      ]
+    },
+    {
+      "description": "Always showing a fixed set of 5 Swiss mock clients in the clients list (per file summary).",
+      "reason": "Not requested by REQ-1/REQ-2 and could be additional/non-rollback behavior.",
+      "evidence": [
+        "frontend-file-summaries.txt"
       ]
     }
   ],
-  "confidence": 0.55,
+  "confidence": 0.56,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/settings/AdminManagementSection.tsx",
+    "frontend/src/App.tsx",
+    "frontend/src/components/AuthorizationGate.tsx",
+    "frontend/src/components/ProfileSetupDialog.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/ClientDetailPage.tsx",
+    "frontend/src/utils/urlParams.ts",
     "project_state.json"
   ]
 }

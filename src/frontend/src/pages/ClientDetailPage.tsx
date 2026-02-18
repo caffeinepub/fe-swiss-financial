@@ -33,7 +33,7 @@ async function fetchIPAddress(): Promise<string> {
 }
 
 export default function ClientDetailPage() {
-  const { clientId } = useParams({ from: '/clients/$clientId' });
+  const { clientId } = useParams({ from: '/layout/clients/$clientId' });
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditMode, setIsEditMode] = useState(false);
@@ -42,7 +42,7 @@ export default function ClientDetailPage() {
   const formRef = useRef<HTMLFormElement>(null);
 
   const numericId = parseInt(clientId, 10);
-  const { data: backendClient, isLoading, error } = useGetClient(numericId);
+  const { data: backendClient, isLoading, error } = useGetClient(BigInt(numericId));
   const { data: userProfile } = useGetCallerUserProfile();
   const { data: backendActivityLog } = useGetClientActivityLog(BigInt(numericId));
   const updateOverviewMutation = useUpdateClientOverviewFields();
@@ -379,9 +379,8 @@ export default function ClientDetailPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -391,90 +390,74 @@ export default function ClientDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-light tracking-tight text-foreground">
+            <h1 className="text-3xl font-light tracking-tight">
               {client.firstName} {client.lastName}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Client ID: {client.accountId || client.id.toString()} • {client.nationality || 'N/A'}
+            <p className="text-sm text-muted-foreground">
+              {client.accountId || `ID: ${client.id}`} • {getStatusLabel(client.status)} • {getRiskLabel(client.riskLevel)}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {!isEditMode ? (
             <>
-              <Button variant="outline" className="gap-2" onClick={handleEditClick}>
-                <Edit className="h-4 w-4" />
-                Edit Client
-              </Button>
-              <Button 
-                variant="outline" 
-                className="gap-2" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleExportPDF}
                 disabled={isExportingPDF}
               >
-                <Download className="h-4 w-4" />
+                <Download className="mr-2 h-4 w-4" />
                 {isExportingPDF ? 'Exporting...' : 'Export PDF'}
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleEditClick}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" className="gap-2" onClick={handleCancelClick}>
-                <X className="h-4 w-4" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelClick}
+              >
+                <X className="mr-2 h-4 w-4" />
                 Cancel
               </Button>
-              <Button 
-                className="gap-2" 
+              <Button
+                variant="default"
+                size="sm"
                 onClick={handleSaveClick}
-                disabled={updateOverviewMutation.isPending || appendActivityMutation.isPending}
+                disabled={updateOverviewMutation.isPending}
               >
-                <Save className="h-4 w-4" />
-                {updateOverviewMutation.isPending || appendActivityMutation.isPending ? 'Saving...' : 'Save'}
+                <Save className="mr-2 h-4 w-4" />
+                {updateOverviewMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </>
           )}
         </div>
       </div>
 
-      {/* Status Bar */}
-      <div className="flex items-center gap-4 rounded-lg border border-border bg-muted/30 p-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Status:</span>
-          <Badge variant={client.status === 'active' ? 'default' : 'secondary'}>
-            {getStatusLabel(client.status)}
-          </Badge>
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="rounded-sm border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Email</p>
+          <p className="mt-1 text-sm font-medium">{client.email || '—'}</p>
         </div>
-        <div className="h-4 w-px bg-border" />
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Risk Level:</span>
-          <Badge
-            variant={
-              client.riskLevel === 'high'
-                ? 'destructive'
-                : client.riskLevel === 'medium'
-                ? 'secondary'
-                : 'default'
-            }
-          >
-            {getRiskLabel(client.riskLevel)}
-          </Badge>
+        <div className="rounded-sm border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Phone</p>
+          <p className="mt-1 text-sm font-medium">{client.phone || '—'}</p>
         </div>
-        <div className="h-4 w-px bg-border" />
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Onboarding Date:</span>
-          <span className="text-sm font-medium">
-            {client.onboardingDate ? formatDate(client.onboardingDate) : 'N/A'}
-          </span>
-        </div>
-        <div className="h-4 w-px bg-border" />
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">KYC Review Due:</span>
-          <span className="text-sm font-medium">
-            {client.kycReviewDue ? formatDate(client.kycReviewDue) : 'N/A'}
-          </span>
+        <div className="rounded-sm border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Primary Country</p>
+          <p className="mt-1 text-sm font-medium">{client.primaryCountry || '—'}</p>
         </div>
       </div>
 
-      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>

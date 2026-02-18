@@ -1,79 +1,64 @@
 {
   "kind": "build_request",
-  "title": "Fix Operator detection so Add Staff form renders in Settings Admin Management",
-  "projectName": "FE Swiss CRM",
-  "priority": "high",
+  "title": "Rollback application to Version 23 behavior",
+  "projectName": "Swiss Financial CRM",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-75",
-      "text": "Fix the Operator detection logic in `frontend/src/components/settings/AdminManagementSection.tsx` so that the Add Staff form is visible when (and only when) the logged-in user’s Principal ID matches the Principal ID of the Operator entry in the admin entries table returned by `useGetAdminEntries()` (backend `getAdminEntries`). Do not rely solely on `useGetMyAdminEntry()` for this UI gate; instead, compute `isOperator` using a direct Principal ID comparison against the Operator row in `adminEntries` (with `useGetMyAdminEntry()` allowed only as an optional fallback if needed).",
-      "target": "frontend",
+      "id": "REQ-1",
+      "text": "Revert the application (frontend and backend) to match Version 23 behavior and implementation, removing/regressing any changes introduced in Versions 24–26.",
+      "target": "both",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "Make sure the isOperator check correctly compares the logged-in user's Principal ID with the Operator entry in the admin list."
+          "All back to version 23."
         ]
       },
       "acceptanceCriteria": [
-        "When the admin table includes an entry with role Operator whose Principal ID matches the currently logged-in user’s Principal ID, the “Add Staff Member” form is visible.",
-        "When the logged-in user’s Principal ID does not match the Operator row Principal ID, the Add Staff form is not visible and the page shows an Operator-only message.",
-        "The Operator check is based on comparing the current Principal ID to the Operator row Principal ID from the fetched admin list (not on a heuristic or unrelated field)."
+        "After deployment, the app’s behavior matches Version 23 (no Version 24–26 changes remain).",
+        "No new functionality introduced in Versions 24–26 is present after the rollback."
       ]
     },
     {
-      "id": "REQ-76",
-      "text": "Ensure the Settings > Admin Management UI renders the Add Staff form directly below the admin entries table with exactly: a Principal ID text input, a Display Name text input, and an “Add Staff” button, using English user-facing labels and validation messaging. The Add Staff action must call the existing backend mutation (via the existing React Query hook) to add the provided Principal ID with role `Staff`.",
+      "id": "REQ-2",
+      "text": "Restore the Version 23 authentication/authorization + layout flow so that after Internet Identity login completes, the app reliably transitions into the authorized layout without hanging on or regressing the \"Verifying authorization...\" stage.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "The form should appear BELOW the admin table with: a Principal ID text input, a Display Name text input, and an \"Add Staff\" button.",
-          "When Add Staff is clicked, call the backend to add the new Principal ID with role \"Staff\"."
+          "All back to version 23."
         ]
       },
       "acceptanceCriteria": [
-        "As Operator, the Add Staff form appears below the admin table and contains the three required controls: Principal ID input, Display Name input, and “Add Staff” button.",
-        "Submitting the form with empty Principal ID or Display Name shows an English validation error and does not call the backend.",
-        "Submitting the form with valid values calls the existing add-admin mutation with role Staff and clears the inputs on success."
-      ]
-    },
-    {
-      "id": "REQ-77",
-      "text": "After a successful Add Staff operation, refresh the admin entries table so the newly added Staff entry appears. Also enforce correct Remove button behavior: show a Remove button for each non-Operator row only when the logged-in user is the Operator; never show a Remove button on the Operator row.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "After adding, refresh the admin table to show the new entry.",
-          "Each non-Operator row should have a Remove button. The Operator row must NOT have a Remove button."
-        ]
-      },
-      "acceptanceCriteria": [
-        "After adding a Staff entry, the admin entries table updates to include the new row without requiring a manual page refresh.",
-        "When the logged-in user is the Operator, each Staff row shows a Remove button and the Operator row shows no Remove button.",
-        "When the logged-in user is not the Operator, the Remove column/buttons are not shown."
+        "When a user logs in, the app proceeds from the login screen to the authorized app layout (sidebar + routed pages) without indefinite loading.",
+        "The authorization loading screen text remains in English and only appears while the actor and authorization status are actually being fetched."
       ]
     }
   ],
   "constraints": [
-    "Frontend-only fix in the Settings > Admin Management UI; do not modify backend canister code.",
-    "Do NOT change Edit Client, Activity Log, Export PDF, clients list, Dashboard, Onboarding, KYC Screening, Reports, or any other feature outside Settings Admin Management.",
-    "Keep all user-facing text in English.",
-    "Do not edit any frontend immutable paths listed in SYSTEM_CONTEXT (e.g., `frontend/src/hooks/useInternetIdentity.ts[x]`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`, `frontend/src/components/ui`)."
+    "Do not edit any files under frontend/immutablePaths (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
+    "Keep all Motoko logic in the single actor at backend/main.mo; only add backend/migration.mo if a state/schema upgrade is strictly required for the rollback."
   ],
   "nonGoals": [
-    "Do not redesign the Settings page beyond making the Add Staff form visible/functional for Operator and enforcing Remove-button rules.",
-    "Do not change authorization gating logic in `AuthorizationGate` or the Access Denied screen copy.",
-    "Do not add new backend endpoints; use existing admin list and add/remove mutations already in place."
+    "Adding new features beyond restoring Version 23 behavior.",
+    "Refactoring unrelated code or changing the visual design beyond what is necessary to match Version 23."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

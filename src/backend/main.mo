@@ -1,14 +1,12 @@
 import List "mo:core/List";
 import Map "mo:core/Map";
 import Nat "mo:core/Nat";
-import Runtime "mo:core/Runtime";
+import Principal "mo:core/Principal";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
-import Principal "mo:core/Principal";
+import Runtime "mo:core/Runtime";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
-
-
 
 actor {
   let accessControlState = AccessControl.initState();
@@ -153,7 +151,7 @@ actor {
     #none;
   };
 
-  // Storage
+  // System Storage
   let clients = Map.empty<Nat, ClientProfile>();
   var nextClientId = 1;
   let userProfiles = Map.empty<Principal, UserProfile>();
@@ -169,43 +167,11 @@ actor {
     };
   };
 
-  func checkAdmin(caller : Principal) {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-  };
-
-  func checkUser(caller : Principal) {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can perform this action");
-    };
-  };
-
-  func isOperator(principal : Principal) : Bool {
-    switch (adminAllowlist.get(principal)) {
-      case (null) { false };
-      case (?entry) { entry.role == #operator };
-    };
-  };
-
-  func getOperatorCount() : Nat {
-    var count = 0;
-    for ((_, entry) in adminAllowlist.entries()) {
-      if (entry.role == #operator) { count += 1 };
-    };
-    count;
-  };
-
-  func isInAllowlist(principal : Principal) : Bool {
-    switch (adminAllowlist.get(principal)) {
-      case (null) { false };
-      case (?_) { true };
-    };
-  };
-
   // User Profile Management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    checkUser(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view profiles");
+    };
     userProfiles.get(caller);
   };
 
@@ -219,18 +185,20 @@ actor {
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
     if (not adminCreated) {
       adminCreated := true;
-      canisterDeployer := ?caller;
       userProfiles.add(caller, profile);
       return;
     };
-
-    checkUser(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save profiles");
+    };
     userProfiles.add(caller, profile);
   };
 
   // Client CRUD Operations
   public shared ({ caller }) func createClient(profile : ClientProfile) : async Nat {
-    checkAdmin(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create clients");
+    };
     let clientId = nextClientId;
     nextClientId += 1;
     let newProfile = { profile with id = clientId };
@@ -239,33 +207,43 @@ actor {
   };
 
   public shared ({ caller }) func updateClient(id : Nat, updatedProfile : ClientProfile) : async () {
-    checkAdmin(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update clients");
+    };
     ignore getClientOrTrap(id);
     clients.add(id, { updatedProfile with id });
   };
 
   public shared ({ caller }) func deleteClient(id : Nat) : async () {
-    checkAdmin(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete clients");
+    };
     ignore getClientOrTrap(id);
     clients.remove(id);
   };
 
   public query ({ caller }) func getClient(id : Nat) : async ClientProfile {
-    checkUser(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view clients");
+    };
     getClientOrTrap(id);
   };
 
   public query ({ caller }) func getAllClients() : async [ClientProfile] {
-    checkUser(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view clients");
+    };
     clients.values().toArray();
   };
 
-  // Overview Field Updates (User-level access)
+  // Overview Field Updates
   public shared ({ caller }) func updateClientOverviewFields(
     id : Nat,
     updates : OverviewFieldUpdate,
   ) : async () {
-    checkUser(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update client fields");
+    };
     let client = getClientOrTrap(id);
 
     let updatedClient = {
@@ -287,12 +265,14 @@ actor {
     clients.add(id, updatedClient);
   };
 
-  // Activity Log Management (User-level access for audit trail)
+  // Activity Log Management
   public shared ({ caller }) func appendActivityLogEntries(
     clientId : Nat,
     entries : [ActivityLogEntry],
   ) : async () {
-    checkUser(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can append activity log entries");
+    };
     let client = getClientOrTrap(clientId);
 
     let formattedEntries = entries.map(
@@ -308,15 +288,18 @@ actor {
   };
 
   public query ({ caller }) func getClientActivityLog(clientId : Nat) : async [Text] {
-    checkUser(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view activity logs");
+    };
     let client = getClientOrTrap(clientId);
     client.activityLog;
   };
 
   // Onboarding Pipeline Functionality
   public query ({ caller }) func getOnboardingPipeline() : async [OnboardingStage] {
-    checkUser(caller);
-
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view onboarding pipeline");
+    };
     let stages = ["Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5", "Stage 6"];
     let stageLists = List.fromArray<List.List<OnboardingCard>>([List.empty<OnboardingCard>(), List.empty<OnboardingCard>(), List.empty<OnboardingCard>(), List.empty<OnboardingCard>(), List.empty<OnboardingCard>(), List.empty<OnboardingCard>()]);
 
@@ -335,7 +318,7 @@ actor {
           step.stepNumber - 1;
         } else { 0 };
 
-        if (stageIndex < stageLists.size()) {
+        if (stageIndex < 6) {
           let listsArray = stageLists.values().toArray();
           if (stageIndex < listsArray.size()) {
             listsArray[stageIndex].add(card);
@@ -346,7 +329,7 @@ actor {
 
     let onboardingStages = List.empty<OnboardingStage>();
     for ((i, stageName) in stages.enumerate()) {
-      if (i < stageLists.size()) {
+      if (i < 6) {
         let listsArray = stageLists.values().toArray();
         if (i < listsArray.size()) {
           onboardingStages.add({
@@ -367,7 +350,9 @@ actor {
     assignedPerson : Text,
     dueDate : ?Time.Time,
   ) : async () {
-    checkAdmin(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can move clients to stages");
+    };
     let client = getClientOrTrap(clientId);
 
     let updatedSteps = client.onboardingSteps.map(
@@ -391,8 +376,9 @@ actor {
 
   // Dashboard Queries
   public query ({ caller }) func getDashboardStats() : async DashboardStats {
-    checkUser(caller);
-
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view dashboard stats");
+    };
     var totalClients = 0;
     var prospectCount = 0;
     var onboardingCount = 0;
@@ -435,53 +421,35 @@ actor {
 
   // Add admin method - bootstrap: deployer becomes operator, then only operator can add
   public shared ({ caller }) func addAdmin(principal : Principal, name : Text, role : AdminRole) : async Bool {
-    let operatorCount = getOperatorCount();
-
     // Bootstrap: first call must be from canister deployer
-    if (operatorCount == 0) {
-      switch (canisterDeployer) {
-        case (null) {
-          Runtime.trap("Canister deployer not initialized");
+    switch (canisterDeployer) {
+      case (null) {
+        Runtime.trap("Canister deployer not initialized");
+      };
+      case (?deployer) {
+        if (caller != deployer) {
+          Runtime.trap("Unauthorized: Only canister deployer can create initial operator");
         };
-        case (?deployer) {
-          if (caller != deployer) {
-            Runtime.trap("Unauthorized: Only canister deployer can create initial operator");
-          };
-          // First admin must be operator
-          if (role != #operator) {
-            Runtime.trap("First admin must be an operator");
-          };
-          adminAllowlist.add(principal, {
-            principal;
-            name;
-            role = #operator;
-            addedOn = Time.now();
-          });
-          return true;
+        // First admin must be operator
+        if (role != #operator) {
+          Runtime.trap("First admin must be an operator");
         };
+        adminAllowlist.add(principal, {
+          principal;
+          name;
+          role = #operator;
+          addedOn = Time.now();
+        });
+        return true;
       };
     };
-
-    // After bootstrap: only operator can add admins
-    if (not isOperator(caller)) {
-      Runtime.trap("Unauthorized: Only operator can add admins");
-    };
-
-    adminAllowlist.add(principal, {
-      principal;
-      name;
-      role;
-      addedOn = Time.now();
-    });
-    true;
   };
 
-  // Remove admin (except operator) - only operator can do this
+  // Remove admin (except operator)
   public shared ({ caller }) func removeAdmin(principal : Principal) : async Bool {
-    if (not isOperator(caller)) {
-      Runtime.trap("Unauthorized: Only operator can remove admins");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can remove admin entries");
     };
-
     switch (adminAllowlist.get(principal)) {
       case (null) { Runtime.trap("Admin not found") };
       case (?admin) {
@@ -494,36 +462,18 @@ actor {
     };
   };
 
-  // Get all admin entries - only authorized users can view
+  // Get all admin entries
   public query ({ caller }) func getAdminEntries() : async [AdminEntry] {
-    if (adminAllowlist.isEmpty()) {
-      registerFirstOperator(caller);
-      return adminAllowlist.values().toArray();
-    };
-
-    if (not isInAllowlist(caller)) {
-      Runtime.trap("Unauthorized: Only authorized admins can view admin list");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view admin entries");
     };
     adminAllowlist.values().toArray();
   };
 
-  func registerFirstOperator(caller : Principal) {
-    if (not adminAllowlist.isEmpty()) {
-      Runtime.trap("Operator already exists");
-    };
-
-    adminAllowlist.add(caller, {
-      principal = caller;
-      name = "System Administrator";
-      role = #operator;
-      addedOn = Time.now();
-    });
-  };
-
-  // Get single admin entry - only authorized users can view
+  // Get single admin entry
   public query ({ caller }) func getAdminEntry(principal : Principal) : async AdminEntry {
-    if (not isInAllowlist(caller)) {
-      Runtime.trap("Unauthorized: Only authorized admins can view admin entries");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view admin entries");
     };
     switch (adminAllowlist.get(principal)) {
       case (null) { Runtime.trap("Admin entry not found") };
@@ -536,11 +486,9 @@ actor {
     adminAllowlist.get(caller);
   };
 
-  // Check if caller is authorized - PUBLIC endpoint for frontend verification
+  // Check if caller is authorized
   public query ({ caller }) func isAuthorized() : async AuthorizationResult {
-    let operatorCount = getOperatorCount();
-
-    if (operatorCount == 0) {
+    if (adminAllowlist.isEmpty()) {
       return {
         status = #operatorMissing;
         message = "Operator entry does not exist. Please create one.";
@@ -563,11 +511,8 @@ actor {
     };
   };
 
-  // Get allowlist size - only authorized users can view
+  // Get allowlist size
   public query ({ caller }) func getAllowlistSize() : async Nat {
-    if (not isInAllowlist(caller)) {
-      Runtime.trap("Unauthorized: Only authorized admins can view allowlist size");
-    };
     adminAllowlist.size();
   };
 };

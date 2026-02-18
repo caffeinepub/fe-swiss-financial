@@ -2,10 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-operator-detection-logic-in-frontend-src-components-settings-adminmanagementsection-tsx-so-that-the-add-staff-form-is-visible-when-and-only-when-the-logged-in-user-s-principal-id-matches-the-principal-id-of-the-operator-entry-in-the-admin-entries-table-returned-by-usegetadminentries-backend-getadminentries-do-not-rely-solely-on-usegetmyadminentry-for-this-ui-gate-instead-compute-isoperator-using-a-direct-principal-id-comparison-against-the-operator-row-in-adminentries-with-usegetmyadminentry-allowed-only-as-an-optional-fallback-if-needed",
-      "featureTitle": "Fix the Operator detection logic in `frontend/src/components/settings/AdminManagementSection.tsx` so that the Add Staff form is visible when (and only when) the logged-in user’s Principal ID matches the Principal ID of the Operator entry in the admin entries table returned by `useGetAdminEntries()` (backend `getAdminEntries`). Do not rely solely on `useGetMyAdminEntry()` for this UI gate; instead, compute `isOperator` using a direct Principal ID comparison against the Operator row in `adminEntries` (with `useGetMyAdminEntry()` allowed only as an optional fallback if needed).",
+      "featureId": "feature-revert-the-application-frontend-and-backend-to-match-version-23-behavior-and-implementation-removing-regressing-any-changes-introduced-in-versions-24-26",
+      "featureTitle": "Revert the application (frontend and backend) to match Version 23 behavior and implementation, removing/regressing any changes introduced in Versions 24–26.",
       "files": [
-        "frontend/src/components/settings/AdminManagementSection.tsx"
+        "frontend/src/App.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/utils/urlParams.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -16,15 +18,17 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-75"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-settings-admin-management-ui-renders-the-add-staff-form-directly-below-the-admin-entries-table-with-exactly-a-principal-id-text-input-a-display-name-text-input-and-an-add-staff-button-using-english-user-facing-labels-and-validation-messaging-the-add-staff-action-must-call-the-existing-backend-mutation-via-the-existing-react-query-hook-to-add-the-provided-principal-id-with-role-staff",
-      "featureTitle": "Ensure the Settings > Admin Management UI renders the Add Staff form directly below the admin entries table with exactly: a Principal ID text input, a Display Name text input, and an “Add Staff” button, using English user-facing labels and validation messaging. The Add Staff action must call the existing backend mutation (via the existing React Query hook) to add the provided Principal ID with role `Staff`.",
+      "featureId": "feature-restore-the-version-23-authentication-authorization-layout-flow-so-that-after-internet-identity-login-completes-the-app-reliably-transitions-into-the-authorized-layout-without-hanging-on-or-regressing-the-verifying-authorization-stage",
+      "featureTitle": "Restore the Version 23 authentication/authorization + layout flow so that after Internet Identity login completes, the app reliably transitions into the authorized layout without hanging on or regressing the \"Verifying authorization...\" stage.",
       "files": [
-        "frontend/src/components/settings/AdminManagementSection.tsx"
+        "frontend/src/components/AuthorizationGate.tsx",
+        "frontend/src/components/ProfileSetupDialog.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -35,26 +39,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-76"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-after-a-successful-add-staff-operation-refresh-the-admin-entries-table-so-the-newly-added-staff-entry-appears-also-enforce-correct-remove-button-behavior-show-a-remove-button-for-each-non-operator-row-only-when-the-logged-in-user-is-the-operator-never-show-a-remove-button-on-the-operator-row",
-      "featureTitle": "After a successful Add Staff operation, refresh the admin entries table so the newly added Staff entry appears. Also enforce correct Remove button behavior: show a Remove button for each non-Operator row only when the logged-in user is the Operator; never show a Remove button on the Operator row.",
-      "files": [
-        "frontend/src/components/settings/AdminManagementSection.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-77"
+        "REQ-2"
       ],
       "confidence": "high"
     }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useQueries';
 import {
   Dialog,
@@ -14,12 +15,14 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 
 export default function ProfileSetupDialog() {
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const { identity } = useInternetIdentity();
+  const { data: userProfile, isLoading: profileLoading } = useGetCallerUserProfile();
   const saveProfile = useSaveCallerUserProfile();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
-  const showDialog = isFetched && userProfile === null;
+  const isAuthenticated = !!identity;
+  const showDialog = isAuthenticated && !profileLoading && userProfile === null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

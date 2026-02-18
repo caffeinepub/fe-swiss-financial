@@ -5,23 +5,16 @@ import type { Principal } from '@icp-sdk/core/principal';
 
 // User Profile Queries
 export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching } = useActor();
 
-  const query = useQuery<UserProfile | null>({
+  return useQuery<UserProfile | null>({
     queryKey: ['currentUserProfile'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) return null;
       return actor.getCallerUserProfile();
     },
-    enabled: !!actor && !actorFetching,
-    retry: false,
+    enabled: !!actor && !isFetching,
   });
-
-  return {
-    ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
-  };
 }
 
 export function useSaveCallerUserProfile() {
@@ -41,43 +34,30 @@ export function useSaveCallerUserProfile() {
 
 // Authorization Queries
 export function useGetAuthorizationStatus() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching } = useActor();
 
-  const query = useQuery<AuthorizationResult>({
+  return useQuery<AuthorizationResult>({
     queryKey: ['authorizationStatus'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
       return actor.isAuthorized();
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !isFetching,
     retry: false,
   });
-
-  return {
-    ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
-  };
 }
 
 export function useGetMyAdminEntry() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching } = useActor();
 
-  const query = useQuery<AdminEntry | null>({
+  return useQuery<AdminEntry | null>({
     queryKey: ['myAdminEntry'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) return null;
       return actor.getCallerAdminEntry();
     },
-    enabled: !!actor && !actorFetching,
-    retry: false,
+    enabled: !!actor && !isFetching,
   });
-
-  return {
-    ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
-  };
 }
 
 export function useGetAdminEntries() {
@@ -87,7 +67,7 @@ export function useGetAdminEntries() {
   return useQuery<AdminEntry[]>({
     queryKey: ['adminEntries'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) return [];
       const entries = await actor.getAdminEntries();
       // After fetching admin entries, invalidate myAdminEntry to ensure it's up to date
       queryClient.invalidateQueries({ queryKey: ['myAdminEntry'] });
@@ -150,23 +130,23 @@ export function useGetAllClients() {
   return useQuery<ClientProfile[]>({
     queryKey: ['clients'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) return [];
       return actor.getAllClients();
     },
     enabled: !!actor && !isFetching,
   });
 }
 
-export function useGetClient(id: number) {
+export function useGetClient(id: bigint) {
   const { actor, isFetching } = useActor();
 
   return useQuery<ClientProfile>({
-    queryKey: ['client', id],
+    queryKey: ['client', id.toString()],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getClient(BigInt(id));
+      return actor.getClient(id);
     },
-    enabled: !!actor && !isFetching && id !== undefined,
+    enabled: !!actor && !isFetching && id > 0n,
   });
 }
 
@@ -175,60 +155,46 @@ export function useCreateClient() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (profile: Omit<ClientProfile, 'id'>) => {
+    mutationFn: async (profile: ClientProfile) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.createClient(profile as ClientProfile);
+      return actor.createClient(profile);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-      queryClient.invalidateQueries({ queryKey: ['onboardingPipeline'] });
     },
   });
 }
 
-// Overview Field Updates
-export function useUpdateClientOverviewFields() {
+export function useUpdateClient() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: bigint; updates: OverviewFieldUpdate }) => {
+    mutationFn: async ({ id, profile }: { id: bigint; profile: ClientProfile }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateClientOverviewFields(id, updates);
+      return actor.updateClient(id, profile);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['client', Number(variables.id)] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['client', variables.id.toString()] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     },
   });
 }
 
-// Activity Log
-export function useGetClientActivityLog(clientId: bigint) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<string[]>({
-    queryKey: ['clientActivityLog', clientId.toString()],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getClientActivityLog(clientId);
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useAppendActivityLogEntries() {
+export function useDeleteClient() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ clientId, entries }: { clientId: bigint; entries: ActivityLogEntry[] }) => {
+    mutationFn: async (id: bigint) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.appendActivityLogEntries(clientId, entries);
+      return actor.deleteClient(id);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['clientActivityLog', variables.clientId.toString()] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     },
   });
 }
@@ -240,7 +206,7 @@ export function useGetOnboardingPipeline() {
   return useQuery<OnboardingStage[]>({
     queryKey: ['onboardingPipeline'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) return [];
       return actor.getOnboardingPipeline();
     },
     enabled: !!actor && !isFetching,
@@ -270,6 +236,53 @@ export function useMoveClientToStage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['onboardingPipeline'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+}
+
+// Overview Field Updates
+export function useUpdateClientOverviewFields() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: bigint; updates: OverviewFieldUpdate }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateClientOverviewFields(id, updates);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['client', variables.id.toString()] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+}
+
+// Activity Log Queries
+export function useGetClientActivityLog(clientId: bigint) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<string[]>({
+    queryKey: ['activityLog', clientId.toString()],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getClientActivityLog(clientId);
+    },
+    enabled: !!actor && !isFetching && clientId > 0n,
+  });
+}
+
+export function useAppendActivityLogEntries() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ clientId, entries }: { clientId: bigint; entries: ActivityLogEntry[] }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.appendActivityLogEntries(clientId, entries);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['activityLog', variables.clientId.toString()] });
     },
   });
 }

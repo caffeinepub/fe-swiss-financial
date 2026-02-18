@@ -13,6 +13,15 @@ import KYCScreeningPage from './pages/KYCScreeningPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 
+function LayoutWrapper() {
+  return (
+    <>
+      <ProfileSetupDialog />
+      <AppLayout />
+    </>
+  );
+}
+
 function RootComponent() {
   const { identity } = useInternetIdentity();
   const isAuthenticated = !!identity;
@@ -23,8 +32,7 @@ function RootComponent() {
 
   return (
     <AuthorizationGate>
-      <ProfileSetupDialog />
-      <AppLayout />
+      <Outlet />
     </AuthorizationGate>
   );
 }
@@ -33,63 +41,71 @@ const rootRoute = createRootRoute({
   component: RootComponent,
 });
 
-const indexRoute = createRoute({
+const layoutRoute = createRoute({
   getParentRoute: () => rootRoute,
+  id: 'layout',
+  component: LayoutWrapper,
+});
+
+const indexRoute = createRoute({
+  getParentRoute: () => layoutRoute,
   path: '/',
   component: DashboardPage,
 });
 
 const clientsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => layoutRoute,
   path: '/clients',
   component: ClientsPage,
 });
 
 const clientDetailRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => layoutRoute,
   path: '/clients/$clientId',
   component: ClientDetailPage,
 });
 
 const addClientRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => layoutRoute,
   path: '/add-client',
   component: AddClientPage,
 });
 
 const onboardingRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => layoutRoute,
   path: '/onboarding',
   component: OnboardingPage,
 });
 
 const kycScreeningRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => layoutRoute,
   path: '/kyc-screening',
   component: KYCScreeningPage,
 });
 
 const reportsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => layoutRoute,
   path: '/reports',
   component: ReportsPage,
 });
 
 const settingsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => layoutRoute,
   path: '/settings',
   component: SettingsPage,
 });
 
 const routeTree = rootRoute.addChildren([
-  indexRoute,
-  clientsRoute,
-  clientDetailRoute,
-  addClientRoute,
-  onboardingRoute,
-  kycScreeningRoute,
-  reportsRoute,
-  settingsRoute,
+  layoutRoute.addChildren([
+    indexRoute,
+    clientsRoute,
+    clientDetailRoute,
+    addClientRoute,
+    onboardingRoute,
+    kycScreeningRoute,
+    reportsRoute,
+    settingsRoute,
+  ]),
 ]);
 
 const router = createRouter({ routeTree });
