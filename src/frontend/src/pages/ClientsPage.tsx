@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Search, ArrowUpDown, Plus } from 'lucide-react';
 import { formatDate, getStatusLabel, getRiskLabel } from '../utils/format';
 import { mockClients } from '../mocks/clientsListMock';
+import { getLocalClients } from '../utils/localClients';
 import type { ClientProfile } from '../backend';
 
 type SortField = 'name' | 'onboardingDate' | 'status' | 'riskLevel';
@@ -23,7 +24,7 @@ type SortDirection = 'asc' | 'desc';
 
 export default function ClientsPage() {
   const navigate = useNavigate();
-  const { data: clients, isLoading } = useGetAllClients();
+  const { data: backendClients, isLoading } = useGetAllClients();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -37,25 +38,35 @@ export default function ClientsPage() {
     }
   };
 
-  // Use mock data if backend returns empty list
+  // Merge backend clients, local clients, and always include mock clients
   const displayClients = useMemo(() => {
-    if (!clients) return [];
-    return clients.length === 0 ? mockClients : clients;
-  }, [clients]);
+    const localClients = getLocalClients();
+    const backend = backendClients || [];
+    
+    // Always include mock clients + backend clients + local clients
+    return [...mockClients, ...backend, ...localClients];
+  }, [backendClients]);
 
   const filteredAndSortedClients = useMemo(() => {
     if (!displayClients) return [];
 
-    let filtered = displayClients.filter((client) =>
-      client.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Search by first name, last name, or full name
+    let filtered = displayClients.filter((client) => {
+      const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+      const query = searchQuery.toLowerCase();
+      return fullName.includes(query) || 
+             client.firstName.toLowerCase().includes(query) ||
+             client.lastName.toLowerCase().includes(query);
+    });
 
     filtered.sort((a, b) => {
       let comparison = 0;
 
       switch (sortField) {
         case 'name':
-          comparison = a.name.localeCompare(b.name);
+          const nameA = `${a.firstName} ${a.lastName}`;
+          const nameB = `${b.firstName} ${b.lastName}`;
+          comparison = nameA.localeCompare(nameB);
           break;
         case 'onboardingDate':
           const dateA = a.onboardingDate || BigInt(0);
@@ -174,7 +185,9 @@ export default function ClientsPage() {
                   onClick={() => handleRowClick(client.id)}
                   className="cursor-pointer hover:bg-muted/50"
                 >
-                  <TableCell className="font-medium">{client.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {client.firstName} {client.lastName}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={client.status === 'active' ? 'default' : 'secondary'}>
                       {getStatusLabel(client.status)}
@@ -193,7 +206,7 @@ export default function ClientsPage() {
                       {getRiskLabel(client.riskLevel)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{client.nationality}</TableCell>
+                  <TableCell>{client.nationality || 'N/A'}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {client.relationshipManager.toString().slice(0, 8)}...
                   </TableCell>

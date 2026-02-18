@@ -1,14 +1,16 @@
 import Array "mo:core/Array";
 import List "mo:core/List";
 import Map "mo:core/Map";
+
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
+
+
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
-
 
 
 actor {
@@ -52,12 +54,19 @@ actor {
 
   public type ClientProfile = {
     id : Nat;
-    name : Text;
-    dob : ?Text;
-    nationality : Text;
-    address : Text;
-    phone : Text;
+    firstName : Text;
+    lastName : Text;
+    accountId : Text;
     email : Text;
+    phone : Text;
+    address : Text;
+    primaryCountry : Text;
+    dateOfBirth : Text;
+    nationality : Text;
+    passportNumber : Text;
+    passportExpiryDate : Text;
+    placeOfBirth : Text;
+    tin : Text;
     clientType : ClientType;
     status : ClientStatus;
     riskLevel : RiskLevel;
@@ -101,6 +110,29 @@ actor {
     lowRiskCount : Nat;
     mediumRiskCount : Nat;
     highRiskCount : Nat;
+  };
+
+  public type ActivityLogEntry = {
+    timestamp : Time.Time;
+    fieldName : Text;
+    oldValue : Text;
+    newValue : Text;
+    user : Text;
+  };
+
+  public type OverviewFieldUpdate = {
+    firstName : ?Text;
+    lastName : ?Text;
+    email : ?Text;
+    phone : ?Text;
+    address : ?Text;
+    primaryCountry : ?Text;
+    dateOfBirth : ?Text;
+    nationality : ?Text;
+    passportNumber : ?Text;
+    passportExpiryDate : ?Text;
+    placeOfBirth : ?Text;
+    tin : ?Text;
   };
 
   // Storage
@@ -186,6 +218,59 @@ actor {
     clients.values().toArray();
   };
 
+  // Overview Field Updates (User-level access)
+  public shared ({ caller }) func updateClientOverviewFields(
+    id : Nat,
+    updates : OverviewFieldUpdate,
+  ) : async () {
+    checkUser(caller);
+    let client = getClientOrTrap(id);
+
+    let updatedClient = {
+      client with
+      firstName = switch (updates.firstName) { case (?v) v; case null client.firstName };
+      lastName = switch (updates.lastName) { case (?v) v; case null client.lastName };
+      email = switch (updates.email) { case (?v) v; case null client.email };
+      phone = switch (updates.phone) { case (?v) v; case null client.phone };
+      address = switch (updates.address) { case (?v) v; case null client.address };
+      primaryCountry = switch (updates.primaryCountry) { case (?v) v; case null client.primaryCountry };
+      dateOfBirth = switch (updates.dateOfBirth) { case (?v) v; case null client.dateOfBirth };
+      nationality = switch (updates.nationality) { case (?v) v; case null client.nationality };
+      passportNumber = switch (updates.passportNumber) { case (?v) v; case null client.passportNumber };
+      passportExpiryDate = switch (updates.passportExpiryDate) { case (?v) v; case null client.passportExpiryDate };
+      placeOfBirth = switch (updates.placeOfBirth) { case (?v) v; case null client.placeOfBirth };
+      tin = switch (updates.tin) { case (?v) v; case null client.tin };
+    };
+
+    clients.add(id, updatedClient);
+  };
+
+  // Activity Log Management (User-level access for audit trail)
+  public shared ({ caller }) func appendActivityLogEntries(
+    clientId : Nat,
+    entries : [ActivityLogEntry],
+  ) : async () {
+    checkUser(caller);
+    let client = getClientOrTrap(clientId);
+
+    let formattedEntries = entries.map(
+      func(entry : ActivityLogEntry) : Text {
+        let timestamp = entry.timestamp.toText();
+        timestamp # " | " # entry.fieldName # " | Old: " # entry.oldValue # " | New: " # entry.newValue # " | User: " # entry.user;
+      }
+    );
+
+    let updatedLog = client.activityLog.concat(formattedEntries);
+    let updatedClient = { client with activityLog = updatedLog };
+    clients.add(clientId, updatedClient);
+  };
+
+  public query ({ caller }) func getClientActivityLog(clientId : Nat) : async [Text] {
+    checkUser(caller);
+    let client = getClientOrTrap(clientId);
+    client.activityLog;
+  };
+
   // Onboarding Pipeline Functionality
   public query ({ caller }) func getOnboardingPipeline() : async [OnboardingStage] {
     checkUser(caller);
@@ -197,7 +282,7 @@ actor {
       for (step in client.onboardingSteps.values()) {
         let card : OnboardingCard = {
           clientId = client.id;
-          clientName = client.name;
+          clientName = client.firstName # " " # client.lastName;
           stepNumber = step.stepNumber;
           stepStatus = step.status;
           assignedPerson = step.assignedPerson;

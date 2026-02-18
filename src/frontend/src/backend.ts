@@ -89,11 +89,6 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface KYCEntry {
-    result: string;
-    date: Time;
-    notes: string;
-}
 export type Time = bigint;
 export interface OnboardingCard {
     clientId: bigint;
@@ -102,31 +97,6 @@ export interface OnboardingCard {
     stepNumber: bigint;
     assignedPerson: string;
     stepStatus: string;
-}
-export interface ClientProfile {
-    id: bigint;
-    dob?: string;
-    status: ClientStatus;
-    onboardingDate?: Time;
-    clientType: ClientType;
-    name: string;
-    createdBy: Principal;
-    createdDate: Time;
-    kycHistory: Array<KYCEntry>;
-    nationality: string;
-    email: string;
-    activityLog: Array<string>;
-    kycReviewDue?: Time;
-    relationshipManager: Principal;
-    address: string;
-    riskJustification: string;
-    phone: string;
-    riskLevel: RiskLevel;
-    onboardingSteps: Array<OnboardingStep>;
-}
-export interface OnboardingStage {
-    cards: Array<OnboardingCard>;
-    stageName: string;
 }
 export interface OnboardingStep {
     status: string;
@@ -146,6 +116,64 @@ export interface DashboardStats {
     totalClients: bigint;
     activeCount: bigint;
     onboardingCount: bigint;
+}
+export interface ActivityLogEntry {
+    oldValue: string;
+    user: string;
+    newValue: string;
+    timestamp: Time;
+    fieldName: string;
+}
+export interface OverviewFieldUpdate {
+    tin?: string;
+    placeOfBirth?: string;
+    dateOfBirth?: string;
+    passportExpiryDate?: string;
+    nationality?: string;
+    email?: string;
+    address?: string;
+    phone?: string;
+    passportNumber?: string;
+    primaryCountry?: string;
+    lastName?: string;
+    firstName?: string;
+}
+export interface KYCEntry {
+    result: string;
+    date: Time;
+    notes: string;
+}
+export interface ClientProfile {
+    id: bigint;
+    tin: string;
+    placeOfBirth: string;
+    status: ClientStatus;
+    onboardingDate?: Time;
+    accountId: string;
+    clientType: ClientType;
+    dateOfBirth: string;
+    createdBy: Principal;
+    createdDate: Time;
+    passportExpiryDate: string;
+    kycHistory: Array<KYCEntry>;
+    nationality: string;
+    email: string;
+    activityLog: Array<string>;
+    kycReviewDue?: Time;
+    relationshipManager: Principal;
+    address: string;
+    riskJustification: string;
+    phone: string;
+    passportNumber: string;
+    primaryCountry: string;
+    lastName: string;
+    riskLevel: RiskLevel;
+    onboardingSteps: Array<OnboardingStep>;
+    firstName: string;
+}
+export interface OnboardingStage {
+    cards: Array<OnboardingCard>;
+    stageName: string;
 }
 export interface UserProfile {
     name: string;
@@ -174,6 +202,7 @@ export enum UserRole {
 }
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
+    appendActivityLogEntries(clientId: bigint, entries: Array<ActivityLogEntry>): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createClient(profile: ClientProfile): Promise<bigint>;
     deleteClient(id: bigint): Promise<void>;
@@ -181,6 +210,7 @@ export interface backendInterface {
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getClient(id: bigint): Promise<ClientProfile>;
+    getClientActivityLog(clientId: bigint): Promise<Array<string>>;
     getDashboardStats(): Promise<DashboardStats>;
     getOnboardingPipeline(): Promise<Array<OnboardingStage>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -188,8 +218,9 @@ export interface backendInterface {
     moveClientToStage(clientId: bigint, stepNumber: bigint, status: string, assignedPerson: string, dueDate: Time | null): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateClient(id: bigint, updatedProfile: ClientProfile): Promise<void>;
+    updateClientOverviewFields(id: bigint, updates: OverviewFieldUpdate): Promise<void>;
 }
-import type { ClientProfile as _ClientProfile, ClientStatus as _ClientStatus, ClientType as _ClientType, KYCEntry as _KYCEntry, OnboardingCard as _OnboardingCard, OnboardingStage as _OnboardingStage, OnboardingStep as _OnboardingStep, RiskLevel as _RiskLevel, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { ClientProfile as _ClientProfile, ClientStatus as _ClientStatus, ClientType as _ClientType, KYCEntry as _KYCEntry, OnboardingCard as _OnboardingCard, OnboardingStage as _OnboardingStage, OnboardingStep as _OnboardingStep, OverviewFieldUpdate as _OverviewFieldUpdate, RiskLevel as _RiskLevel, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -203,6 +234,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor._initializeAccessControlWithSecret(arg0);
+            return result;
+        }
+    }
+    async appendActivityLogEntries(arg0: bigint, arg1: Array<ActivityLogEntry>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.appendActivityLogEntries(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.appendActivityLogEntries(arg0, arg1);
             return result;
         }
     }
@@ -266,28 +311,28 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n28(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n27(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n28(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n27(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n29(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n28(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n29(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n28(this._uploadFile, this._downloadFile, result);
         }
     }
     async getClient(arg0: bigint): Promise<ClientProfile> {
@@ -302,6 +347,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getClient(arg0);
             return from_candid_ClientProfile_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getClientActivityLog(arg0: bigint): Promise<Array<string>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getClientActivityLog(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getClientActivityLog(arg0);
+            return result;
         }
     }
     async getDashboardStats(): Promise<DashboardStats> {
@@ -322,28 +381,28 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getOnboardingPipeline();
-                return from_candid_vec_n31(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n30(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getOnboardingPipeline();
-            return from_candid_vec_n31(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n30(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n28(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n27(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n28(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n27(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -363,14 +422,14 @@ export class Backend implements backendInterface {
     async moveClientToStage(arg0: bigint, arg1: bigint, arg2: string, arg3: string, arg4: Time | null): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.moveClientToStage(arg0, arg1, arg2, arg3, to_candid_opt_n37(this._uploadFile, this._downloadFile, arg4));
+                const result = await this.actor.moveClientToStage(arg0, arg1, arg2, arg3, to_candid_opt_n36(this._uploadFile, this._downloadFile, arg4));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.moveClientToStage(arg0, arg1, arg2, arg3, to_candid_opt_n37(this._uploadFile, this._downloadFile, arg4));
+            const result = await this.actor.moveClientToStage(arg0, arg1, arg2, arg3, to_candid_opt_n36(this._uploadFile, this._downloadFile, arg4));
             return result;
         }
     }
@@ -402,49 +461,63 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async updateClientOverviewFields(arg0: bigint, arg1: OverviewFieldUpdate): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateClientOverviewFields(arg0, to_candid_OverviewFieldUpdate_n37(this._uploadFile, this._downloadFile, arg1));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateClientOverviewFields(arg0, to_candid_OverviewFieldUpdate_n37(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
 }
 function from_candid_ClientProfile_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ClientProfile): ClientProfile {
     return from_candid_record_n16(_uploadFile, _downloadFile, value);
 }
-function from_candid_ClientStatus_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ClientStatus): ClientStatus {
-    return from_candid_variant_n19(_uploadFile, _downloadFile, value);
+function from_candid_ClientStatus_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ClientStatus): ClientStatus {
+    return from_candid_variant_n18(_uploadFile, _downloadFile, value);
 }
-function from_candid_ClientType_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ClientType): ClientType {
-    return from_candid_variant_n22(_uploadFile, _downloadFile, value);
+function from_candid_ClientType_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ClientType): ClientType {
+    return from_candid_variant_n21(_uploadFile, _downloadFile, value);
 }
-function from_candid_OnboardingCard_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OnboardingCard): OnboardingCard {
-    return from_candid_record_n36(_uploadFile, _downloadFile, value);
+function from_candid_OnboardingCard_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OnboardingCard): OnboardingCard {
+    return from_candid_record_n35(_uploadFile, _downloadFile, value);
 }
-function from_candid_OnboardingStage_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OnboardingStage): OnboardingStage {
-    return from_candid_record_n33(_uploadFile, _downloadFile, value);
+function from_candid_OnboardingStage_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OnboardingStage): OnboardingStage {
+    return from_candid_record_n32(_uploadFile, _downloadFile, value);
 }
-function from_candid_OnboardingStep_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OnboardingStep): OnboardingStep {
-    return from_candid_record_n27(_uploadFile, _downloadFile, value);
+function from_candid_OnboardingStep_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OnboardingStep): OnboardingStep {
+    return from_candid_record_n26(_uploadFile, _downloadFile, value);
 }
-function from_candid_RiskLevel_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RiskLevel): RiskLevel {
-    return from_candid_variant_n24(_uploadFile, _downloadFile, value);
+function from_candid_RiskLevel_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RiskLevel): RiskLevel {
+    return from_candid_variant_n23(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n30(_uploadFile, _downloadFile, value);
+function from_candid_UserRole_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n29(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+function from_candid_opt_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Time]): Time | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Time]): Time | null {
-    return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_opt_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: bigint;
-    dob: [] | [string];
+    tin: string;
+    placeOfBirth: string;
     status: _ClientStatus;
     onboardingDate: [] | [_Time];
+    accountId: string;
     clientType: _ClientType;
-    name: string;
+    dateOfBirth: string;
     createdBy: Principal;
     createdDate: _Time;
+    passportExpiryDate: string;
     kycHistory: Array<_KYCEntry>;
     nationality: string;
     email: string;
@@ -454,17 +527,24 @@ function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promise<Uin
     address: string;
     riskJustification: string;
     phone: string;
+    passportNumber: string;
+    primaryCountry: string;
+    lastName: string;
     riskLevel: _RiskLevel;
     onboardingSteps: Array<_OnboardingStep>;
+    firstName: string;
 }): {
     id: bigint;
-    dob?: string;
+    tin: string;
+    placeOfBirth: string;
     status: ClientStatus;
     onboardingDate?: Time;
+    accountId: string;
     clientType: ClientType;
-    name: string;
+    dateOfBirth: string;
     createdBy: Principal;
     createdDate: Time;
+    passportExpiryDate: string;
     kycHistory: Array<KYCEntry>;
     nationality: string;
     email: string;
@@ -474,32 +554,43 @@ function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promise<Uin
     address: string;
     riskJustification: string;
     phone: string;
+    passportNumber: string;
+    primaryCountry: string;
+    lastName: string;
     riskLevel: RiskLevel;
     onboardingSteps: Array<OnboardingStep>;
+    firstName: string;
 } {
     return {
         id: value.id,
-        dob: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.dob)),
-        status: from_candid_ClientStatus_n18(_uploadFile, _downloadFile, value.status),
-        onboardingDate: record_opt_to_undefined(from_candid_opt_n20(_uploadFile, _downloadFile, value.onboardingDate)),
-        clientType: from_candid_ClientType_n21(_uploadFile, _downloadFile, value.clientType),
-        name: value.name,
+        tin: value.tin,
+        placeOfBirth: value.placeOfBirth,
+        status: from_candid_ClientStatus_n17(_uploadFile, _downloadFile, value.status),
+        onboardingDate: record_opt_to_undefined(from_candid_opt_n19(_uploadFile, _downloadFile, value.onboardingDate)),
+        accountId: value.accountId,
+        clientType: from_candid_ClientType_n20(_uploadFile, _downloadFile, value.clientType),
+        dateOfBirth: value.dateOfBirth,
         createdBy: value.createdBy,
         createdDate: value.createdDate,
+        passportExpiryDate: value.passportExpiryDate,
         kycHistory: value.kycHistory,
         nationality: value.nationality,
         email: value.email,
         activityLog: value.activityLog,
-        kycReviewDue: record_opt_to_undefined(from_candid_opt_n20(_uploadFile, _downloadFile, value.kycReviewDue)),
+        kycReviewDue: record_opt_to_undefined(from_candid_opt_n19(_uploadFile, _downloadFile, value.kycReviewDue)),
         relationshipManager: value.relationshipManager,
         address: value.address,
         riskJustification: value.riskJustification,
         phone: value.phone,
-        riskLevel: from_candid_RiskLevel_n23(_uploadFile, _downloadFile, value.riskLevel),
-        onboardingSteps: from_candid_vec_n25(_uploadFile, _downloadFile, value.onboardingSteps)
+        passportNumber: value.passportNumber,
+        primaryCountry: value.primaryCountry,
+        lastName: value.lastName,
+        riskLevel: from_candid_RiskLevel_n22(_uploadFile, _downloadFile, value.riskLevel),
+        onboardingSteps: from_candid_vec_n24(_uploadFile, _downloadFile, value.onboardingSteps),
+        firstName: value.firstName
     };
 }
-function from_candid_record_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     status: string;
     completionDate: [] | [_Time];
     completed: boolean;
@@ -518,15 +609,15 @@ function from_candid_record_n27(_uploadFile: (file: ExternalBlob) => Promise<Uin
 } {
     return {
         status: value.status,
-        completionDate: record_opt_to_undefined(from_candid_opt_n20(_uploadFile, _downloadFile, value.completionDate)),
+        completionDate: record_opt_to_undefined(from_candid_opt_n19(_uploadFile, _downloadFile, value.completionDate)),
         completed: value.completed,
-        dueDate: record_opt_to_undefined(from_candid_opt_n20(_uploadFile, _downloadFile, value.dueDate)),
+        dueDate: record_opt_to_undefined(from_candid_opt_n19(_uploadFile, _downloadFile, value.dueDate)),
         description: value.description,
         stepNumber: value.stepNumber,
         assignedPerson: value.assignedPerson
     };
 }
-function from_candid_record_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     cards: Array<_OnboardingCard>;
     stageName: string;
 }): {
@@ -534,11 +625,11 @@ function from_candid_record_n33(_uploadFile: (file: ExternalBlob) => Promise<Uin
     stageName: string;
 } {
     return {
-        cards: from_candid_vec_n34(_uploadFile, _downloadFile, value.cards),
+        cards: from_candid_vec_n33(_uploadFile, _downloadFile, value.cards),
         stageName: value.stageName
     };
 }
-function from_candid_record_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     clientId: bigint;
     clientName: string;
     dueDate: [] | [_Time];
@@ -556,13 +647,13 @@ function from_candid_record_n36(_uploadFile: (file: ExternalBlob) => Promise<Uin
     return {
         clientId: value.clientId,
         clientName: value.clientName,
-        dueDate: record_opt_to_undefined(from_candid_opt_n20(_uploadFile, _downloadFile, value.dueDate)),
+        dueDate: record_opt_to_undefined(from_candid_opt_n19(_uploadFile, _downloadFile, value.dueDate)),
         stepNumber: value.stepNumber,
         assignedPerson: value.assignedPerson,
         stepStatus: value.stepStatus
     };
 }
-function from_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     active: null;
 } | {
     prospect: null;
@@ -573,14 +664,14 @@ function from_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): ClientStatus {
     return "active" in value ? ClientStatus.active : "prospect" in value ? ClientStatus.prospect : "onboarding" in value ? ClientStatus.onboarding : "offboarded" in value ? ClientStatus.offboarded : value;
 }
-function from_candid_variant_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     entity: null;
 } | {
     individual: null;
 }): ClientType {
     return "entity" in value ? ClientType.entity : "individual" in value ? ClientType.individual : value;
 }
-function from_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     low: null;
 } | {
     high: null;
@@ -589,7 +680,7 @@ function from_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): RiskLevel {
     return "low" in value ? RiskLevel.low : "high" in value ? RiskLevel.high : "medium" in value ? RiskLevel.medium : value;
 }
-function from_candid_variant_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -601,14 +692,14 @@ function from_candid_variant_n30(_uploadFile: (file: ExternalBlob) => Promise<Ui
 function from_candid_vec_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ClientProfile>): Array<ClientProfile> {
     return value.map((x)=>from_candid_ClientProfile_n15(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_OnboardingStep>): Array<OnboardingStep> {
-    return value.map((x)=>from_candid_OnboardingStep_n26(_uploadFile, _downloadFile, x));
+function from_candid_vec_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_OnboardingStep>): Array<OnboardingStep> {
+    return value.map((x)=>from_candid_OnboardingStep_n25(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_OnboardingStage>): Array<OnboardingStage> {
-    return value.map((x)=>from_candid_OnboardingStage_n32(_uploadFile, _downloadFile, x));
+function from_candid_vec_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_OnboardingStage>): Array<OnboardingStage> {
+    return value.map((x)=>from_candid_OnboardingStage_n31(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_OnboardingCard>): Array<OnboardingCard> {
-    return value.map((x)=>from_candid_OnboardingCard_n35(_uploadFile, _downloadFile, x));
+function from_candid_vec_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_OnboardingCard>): Array<OnboardingCard> {
+    return value.map((x)=>from_candid_OnboardingCard_n34(_uploadFile, _downloadFile, x));
 }
 function to_candid_ClientProfile_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ClientProfile): _ClientProfile {
     return to_candid_record_n4(_uploadFile, _downloadFile, value);
@@ -622,13 +713,16 @@ function to_candid_ClientType_n7(_uploadFile: (file: ExternalBlob) => Promise<Ui
 function to_candid_OnboardingStep_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: OnboardingStep): _OnboardingStep {
     return to_candid_record_n13(_uploadFile, _downloadFile, value);
 }
+function to_candid_OverviewFieldUpdate_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: OverviewFieldUpdate): _OverviewFieldUpdate {
+    return to_candid_record_n38(_uploadFile, _downloadFile, value);
+}
 function to_candid_RiskLevel_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: RiskLevel): _RiskLevel {
     return to_candid_variant_n10(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n2(_uploadFile, _downloadFile, value);
 }
-function to_candid_opt_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Time | null): [] | [_Time] {
+function to_candid_opt_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Time | null): [] | [_Time] {
     return value === null ? candid_none() : candid_some(value);
 }
 function to_candid_record_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -658,15 +752,60 @@ function to_candid_record_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         assignedPerson: value.assignedPerson
     };
 }
+function to_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    tin?: string;
+    placeOfBirth?: string;
+    dateOfBirth?: string;
+    passportExpiryDate?: string;
+    nationality?: string;
+    email?: string;
+    address?: string;
+    phone?: string;
+    passportNumber?: string;
+    primaryCountry?: string;
+    lastName?: string;
+    firstName?: string;
+}): {
+    tin: [] | [string];
+    placeOfBirth: [] | [string];
+    dateOfBirth: [] | [string];
+    passportExpiryDate: [] | [string];
+    nationality: [] | [string];
+    email: [] | [string];
+    address: [] | [string];
+    phone: [] | [string];
+    passportNumber: [] | [string];
+    primaryCountry: [] | [string];
+    lastName: [] | [string];
+    firstName: [] | [string];
+} {
+    return {
+        tin: value.tin ? candid_some(value.tin) : candid_none(),
+        placeOfBirth: value.placeOfBirth ? candid_some(value.placeOfBirth) : candid_none(),
+        dateOfBirth: value.dateOfBirth ? candid_some(value.dateOfBirth) : candid_none(),
+        passportExpiryDate: value.passportExpiryDate ? candid_some(value.passportExpiryDate) : candid_none(),
+        nationality: value.nationality ? candid_some(value.nationality) : candid_none(),
+        email: value.email ? candid_some(value.email) : candid_none(),
+        address: value.address ? candid_some(value.address) : candid_none(),
+        phone: value.phone ? candid_some(value.phone) : candid_none(),
+        passportNumber: value.passportNumber ? candid_some(value.passportNumber) : candid_none(),
+        primaryCountry: value.primaryCountry ? candid_some(value.primaryCountry) : candid_none(),
+        lastName: value.lastName ? candid_some(value.lastName) : candid_none(),
+        firstName: value.firstName ? candid_some(value.firstName) : candid_none()
+    };
+}
 function to_candid_record_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: bigint;
-    dob?: string;
+    tin: string;
+    placeOfBirth: string;
     status: ClientStatus;
     onboardingDate?: Time;
+    accountId: string;
     clientType: ClientType;
-    name: string;
+    dateOfBirth: string;
     createdBy: Principal;
     createdDate: Time;
+    passportExpiryDate: string;
     kycHistory: Array<KYCEntry>;
     nationality: string;
     email: string;
@@ -676,17 +815,24 @@ function to_candid_record_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
     address: string;
     riskJustification: string;
     phone: string;
+    passportNumber: string;
+    primaryCountry: string;
+    lastName: string;
     riskLevel: RiskLevel;
     onboardingSteps: Array<OnboardingStep>;
+    firstName: string;
 }): {
     id: bigint;
-    dob: [] | [string];
+    tin: string;
+    placeOfBirth: string;
     status: _ClientStatus;
     onboardingDate: [] | [_Time];
+    accountId: string;
     clientType: _ClientType;
-    name: string;
+    dateOfBirth: string;
     createdBy: Principal;
     createdDate: _Time;
+    passportExpiryDate: string;
     kycHistory: Array<_KYCEntry>;
     nationality: string;
     email: string;
@@ -696,18 +842,25 @@ function to_candid_record_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
     address: string;
     riskJustification: string;
     phone: string;
+    passportNumber: string;
+    primaryCountry: string;
+    lastName: string;
     riskLevel: _RiskLevel;
     onboardingSteps: Array<_OnboardingStep>;
+    firstName: string;
 } {
     return {
         id: value.id,
-        dob: value.dob ? candid_some(value.dob) : candid_none(),
+        tin: value.tin,
+        placeOfBirth: value.placeOfBirth,
         status: to_candid_ClientStatus_n5(_uploadFile, _downloadFile, value.status),
         onboardingDate: value.onboardingDate ? candid_some(value.onboardingDate) : candid_none(),
+        accountId: value.accountId,
         clientType: to_candid_ClientType_n7(_uploadFile, _downloadFile, value.clientType),
-        name: value.name,
+        dateOfBirth: value.dateOfBirth,
         createdBy: value.createdBy,
         createdDate: value.createdDate,
+        passportExpiryDate: value.passportExpiryDate,
         kycHistory: value.kycHistory,
         nationality: value.nationality,
         email: value.email,
@@ -717,8 +870,12 @@ function to_candid_record_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         address: value.address,
         riskJustification: value.riskJustification,
         phone: value.phone,
+        passportNumber: value.passportNumber,
+        primaryCountry: value.primaryCountry,
+        lastName: value.lastName,
         riskLevel: to_candid_RiskLevel_n9(_uploadFile, _downloadFile, value.riskLevel),
-        onboardingSteps: to_candid_vec_n11(_uploadFile, _downloadFile, value.onboardingSteps)
+        onboardingSteps: to_candid_vec_n11(_uploadFile, _downloadFile, value.onboardingSteps),
+        firstName: value.firstName
     };
 }
 function to_candid_variant_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: RiskLevel): {

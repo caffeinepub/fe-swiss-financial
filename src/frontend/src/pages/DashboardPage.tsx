@@ -113,7 +113,9 @@ export default function DashboardPage() {
                   className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"
                 >
                   <div>
-                    <p className="font-medium text-foreground">{client.name}</p>
+                    <p className="font-medium text-foreground">
+                      {client.firstName} {client.lastName}
+                    </p>
                     <p className="text-sm text-muted-foreground">{client.nationality}</p>
                   </div>
                   <div className="text-right">

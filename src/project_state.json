@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 15,
+  "projectStateVersion": 31,
   "summary": "Build a CRM application for a Swiss financial advisory firm (FE Swiss Financial) with a Swiss-style minimalist UI, including a rebuilt sidebar navigation (Dashboard, Clients, Onboarding, KYC Screening, Reports, Settings), dashboard analytics, client list management (with Add New Client CTA on Clients page), detailed client profiles, onboarding kanban pipeline, KYC screening management with manual check entry, and compliance reporting views.",
   "architectural_notes": [
     "Add role/permission concept (at minimum: admin) and an initialization/bootstrap rule to assign admin to the first created record.",
@@ -10,11 +10,16 @@
     "Identity & KYC tab UI spec: Identity Documents displayed as cards; expiry countdown color thresholds (green >90d, orange 30–90d, red <30d/expired) + verified badge/date; KYC Screening History rendered as a table; Current Risk Assessment card includes Initiate New Screening CTA; populate with Swiss-oriented mock data (e.g., Swiss passport, B permit).",
     "Clients page layout: main content must be offset to the right of the ~220px sidebar so page title and search UI never overlap/cut off.",
     "Clients page header should include a prominent \"Add Client\" CTA aligned top-right next to the page title, navigating to the Add Client form route.",
-    "Clients table should render 5 realistic Swiss mock client rows when backend data is unavailable to avoid empty-state table (names, status, risk, nationality, onboarding dates)."
+    "Clients table should render 5 realistic Swiss mock client rows when backend data is unavailable to avoid empty-state table (names, status, risk, nationality, onboarding dates).",
+    "Add Client form spec: sections Contact Details + Personal Data; First/Last required; Account ID auto-generated in format FES-YYYY-NNNN (e.g., FES-2026-0001); default Client Type=Individual with option Entity.",
+    "Create Client flow: attempt backend canister save then navigate to Clients list; on failure, persist locally (fallback) and still navigate/show in list."
   ],
   "known_issues": [
     "Sidebar overlaps main content; main content area needs proper left margin/padding to account for sidebar width.",
-    "Clients page content is still partially hidden under the left sidebar (insufficient left margin/padding)."
+    "Clients page content is still partially hidden under the left sidebar (insufficient left margin/padding).",
+    "Add Client page: 'Create Client' button currently does nothing (no save/no navigation).",
+    "Export PDF filename still incorrect: Caffeine platform overrides document/iframe titles even with iframe print approach; must stop using print-based flows and switch to direct jsPDF download to control filename.",
+    "jsPDF-based Export PDF is not viable because the jsPDF library is not available in this project; revert to a popup-window print approach."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -201,6 +206,182 @@
         "REQ-27"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-fix-the-add-client-page-so-clicking-the-create-client-button-always-triggers-a-submission-flow-validate-required-fields-attempt-to-create-the-client-in-the-backend-canister-and-then-navigate-to-the-clients-list-page-clients",
+      "title": "Fix the Add Client page so clicking the “Create Client” button always triggers a submission flow: validate required fields, attempt to create the client in the backend canister, and then navigate to the Clients list page (`/clients`).",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-add-client-form-ui-and-captured-data-model-to-match-the-requested-crm-fields-and-section-structure-including-an-auto-generated-account-id-in-the-format-fes-yyyy-nnnn-example-shown-fes-2026-0001-and-default-client-type-set-to-individual-with-an-option-for-entity",
+      "title": "Update the Add Client form UI and captured data model to match the requested CRM fields and section structure, including an auto-generated Account ID in the format `FES-YYYY-NNNN` (example shown: `FES-2026-0001`) and default Client Type set to Individual with an option for Entity.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-add-client-submission-persist-the-new-client-to-the-backend-canister-when-possible-if-the-backend-save-fails-for-any-reason-store-the-client-locally-in-the-browser-and-still-navigate-to-clients-ensuring-the-locally-stored-client-appears-in-the-clients-list",
+      "title": "On Add Client submission, persist the new client to the backend canister when possible; if the backend save fails for any reason, store the client locally in the browser and still navigate to `/clients`, ensuring the locally-stored client appears in the Clients list.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-clients-list-so-it-always-shows-the-5-swiss-mock-clients-hans-mueller-sophie-dubois-marco-rossi-elena-fischer-philippe-bonvin-as-clickable-rows-regardless-of-whether-the-backend-returns-an-empty-or-non-empty-client-list-and-ensure-clicking-those-rows-successfully-navigates-to-a-working-client-detail-view",
+      "title": "Update the Clients list so it always shows the 5 Swiss mock clients (Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin) as clickable rows, regardless of whether the backend returns an empty or non-empty client list, and ensure clicking those rows successfully navigates to a working Client Detail view.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-modify-only-the-client-detail-page-overview-tab-ui-component-frontend-src-components-clients-clientoverviewtab-tsx-to-replace-the-existing-overview-content-with-exactly-6-sections-using-english-user-facing-labels-and-keep-all-other-pages-and-tabs-unchanged",
+      "title": "Modify only the Client Detail page “Overview” tab UI (component: `frontend/src/components/clients/ClientOverviewTab.tsx`) to replace the existing Overview content with exactly 6 sections, using English user-facing labels, and keep all other pages and tabs unchanged.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-the-overview-tab-render-the-6-sections-with-the-exact-fields-specified-by-the-user-including-checkbox-style-fields-for-the-specified-completed-confirmation-items-and-show-reasonable-placeholder-values-when-fields-are-not-available-from-existing-mockdata-without-changing-the-mockclientdetail-interface-used-by-other-tabs",
+      "title": "In the Overview tab, render the 6 sections with the exact fields specified by the user, including checkbox-style fields for the specified “Completed”/confirmation items, and show reasonable placeholder values when fields are not available from existing `mockData` (without changing the `MockClientDetail` interface used by other tabs).",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-client-detail-page-header-frontend-src-pages-clientdetailpage-tsx-to-include-an-edit-client-button-positioned-next-to-the-existing-export-pdf-button-clicking-edit-client-must-toggle-an-edit-mode-for-the-overview-tab-and-replace-the-header-actions-with-save-and-cancel-controls-while-in-edit-mode",
+      "title": "Update the Client Detail page header (`frontend/src/pages/ClientDetailPage.tsx`) to include an \"Edit Client\" button positioned next to the existing \"Export PDF\" button. Clicking \"Edit Client\" must toggle an edit mode for the Overview tab and replace the header actions with \"Save\" and \"Cancel\" controls while in edit mode.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-editable-inputs-for-all-fields-rendered-in-the-6-overview-sections-in-frontend-src-components-clients-clientoverviewtab-tsx-when-edit-mode-is-enabled-inputs-must-cover-both-text-number-style-fields-and-checkbox-style-fields-and-must-preserve-the-existing-6-section-structure-and-english-labels",
+      "title": "Implement editable inputs for all fields rendered in the 6 Overview sections in `frontend/src/components/clients/ClientOverviewTab.tsx` when edit mode is enabled. Inputs must cover both text/number-style fields and checkbox-style fields, and must preserve the existing 6-section structure and English labels.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-save-from-edit-mode-persist-the-updated-overview-field-values-for-the-current-client-and-ensure-the-persisted-values-are-shown-after-page-refresh-persistence-must-work-for-clients-loaded-from-a-backend-canister-usegetclient-b-locally-stored-clients-getlocalclient-and-c-mock-clients-if-backend-persistence-is-not-possible-for-a-given-client-source-store-the-updated-overview-values-locally-in-the-browser-for-that-client-id",
+      "title": "On \"Save\" from edit mode, persist the updated Overview field values for the current client and ensure the persisted values are shown after page refresh. Persistence must work for clients loaded from: (a) backend canister (`useGetClient`), (b) locally stored clients (`getLocalClient`), and (c) mock clients. If backend persistence is not possible for a given client source, store the updated Overview values locally in the browser for that client ID.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-an-auditable-activity-log-entry-for-each-field-changed-during-an-overview-save-operation-each-entry-must-capture-timestamp-field-name-old-value-new-value-and-the-user-who-made-the-change-from-the-signed-in-user-profile-identity-append-these-entries-to-the-client-s-activity-log-in-persistent-storage-backend-when-available-otherwise-local-browser-storage-to-support-compliance-audit-trail",
+      "title": "Create an auditable Activity Log entry for each field changed during an Overview \"Save\" operation. Each entry must capture: timestamp, field name, old value, new value, and the user who made the change (from the signed-in user profile / identity). Append these entries to the client’s activity log in persistent storage (backend when available; otherwise local browser storage) to support compliance audit trail.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-activity-log-tab-coming-soon-placeholder-in-frontend-src-pages-clientdetailpage-tsx-with-a-functional-activity-log-view-that-lists-the-saved-audit-entries-including-those-created-by-overview-edits-the-view-must-clearly-display-timestamp-field-name-old-value-new-value-and-user-using-english-column-headers",
+      "title": "Replace the \"Activity Log tab coming soon\" placeholder in `frontend/src/pages/ClientDetailPage.tsx` with a functional Activity Log view that lists the saved audit entries (including those created by Overview edits). The view must clearly display timestamp, field name, old value, new value, and user, using English column headers.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-client-detail-page-frontend-src-pages-clientdetailpage-tsx-so-clicking-the-export-pdf-button-generates-and-downloads-a-pdf-file-instead-of-doing-nothing-without-changing-any-other-pages-or-features",
+      "title": "Update the Client Detail page (`frontend/src/pages/ClientDetailPage.tsx`) so clicking the “Export PDF” button generates and downloads a PDF file (instead of doing nothing), without changing any other pages or features.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-generated-pdf-content-includes-in-order-1-a-header-containing-the-text-helvetica-logo-text-the-client-full-name-the-client-account-id-and-the-current-date-and-2-clearly-labeled-table-formatted-sections-for-all-6-overview-sections-contact-details-personal-data-mandate-wallets-compliance-and-vqf-with-field-names-and-values-rendered-in-a-clean-readable-layout",
+      "title": "Ensure the generated PDF content includes (in order): (1) a header containing the text “HELVETICA” (logo text), the client full name, the client Account ID, and the current date; and (2) clearly labeled, table-formatted sections for all 6 Overview sections: Contact Details, Personal Data, Mandate, Wallets, Compliance, and VQF, with field names and values rendered in a clean, readable layout.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-generate-the-pdf-using-either-a-a-browser-print-to-pdf-approach-or-b-a-client-side-pdf-library-e-g-jspdf-and-set-the-downloaded-filename-to-clientname-accountid-date-pdf-using-the-client-s-name-account-id-and-the-current-date",
+      "title": "Generate the PDF using either (a) a browser print-to-PDF approach or (b) a client-side PDF library (e.g., jsPDF), and set the downloaded filename to `ClientName_AccountID_Date.pdf` using the client’s name, Account ID, and the current date.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-client-detail-page-export-pdf-flow-so-the-browser-print-to-pdf-suggested-filename-uses-the-format-clientname-accountid-date-by-temporarily-overriding-document-title-immediately-before-printing-and-restoring-the-original-title-immediately-after-printing-even-if-printing-throws-use-the-same-client-name-account-id-date-values-already-used-to-build-the-filename-in-frontend-src-pages-clientdetailpage-tsx-example-hans-mueller-fes-2024-0001-2026-02-18-keep-all-other-pages-and-features-unchanged",
+      "title": "Fix the Client Detail page “Export PDF” flow so the browser print-to-PDF suggested filename uses the format \"ClientName_AccountID_Date\" by temporarily overriding `document.title` immediately before printing and restoring the original title immediately after printing (even if printing throws). Use the same client name/account ID/date values already used to build the `filename` in `frontend/src/pages/ClientDetailPage.tsx` (example: \"Hans_Mueller_FES-2024-0001_2026-02-18\"). Keep all other pages and features unchanged.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-client-detail-page-export-pdf-flow-to-stop-relying-on-document-title-and-the-main-window-print-flow-and-instead-use-a-hidden-iframe-whose-own-document-title-is-set-to-the-client-based-filename-format-before-triggering-printing",
+      "title": "Update the Client Detail page Export PDF flow to stop relying on `document.title` and the main window print flow, and instead use a hidden iframe whose own document title is set to the client-based filename format before triggering printing.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-refactor-frontend-src-utils-pdfdownload-ts-so-downloadpdf-sets-the-iframe-document-title-and-or-injects-the-desired-title-into-the-iframe-html-instead-of-overriding-the-parent-document-title-then-triggers-iframe-contentwindow-print-and-reliably-cleans-up-the-iframe-afterward",
+      "title": "Refactor `frontend/src/utils/pdfDownload.ts` so `downloadPDF()` sets the iframe document title (and/or injects the desired `<title>` into the iframe HTML) instead of overriding the parent `document.title`, then triggers `iframe.contentWindow.print()` and reliably cleans up the iframe afterward.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-print-iframe-based-pdf-export-implementation-in-frontend-src-utils-pdfdownload-ts-with-a-jspdf-based-implementation-that-programmatically-creates-a-pdf-in-memory-and-triggers-a-direct-download-using-url-createobjecturl-plus-an-a-tag-click-with-the-download-attribute-set-to-the-requested-filename",
+      "title": "Replace the print/iframe-based PDF export implementation in `frontend/src/utils/pdfDownload.ts` with a jsPDF-based implementation that programmatically creates a PDF in memory and triggers a direct download using `URL.createObjectURL()` plus an `<a>` tag click with the `download` attribute set to the requested filename.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-clientdetailpage-tsx-to-use-the-new-jspdf-based-downloadpdf-flow-and-generate-the-download-filename-in-the-exact-format-firstname-lastname-accountid-yyyy-mm-dd-pdf-using-the-existing-sanitizefilename-and-formatdateforfilename-helpers",
+      "title": "Update `frontend/src/pages/ClientDetailPage.tsx` to use the new jsPDF-based `downloadPDF()` flow and generate the download filename in the exact format `FirstName_LastName_AccountID_YYYY-MM-DD.pdf` using the existing `sanitizeFilename()` and `formatDateForFilename()` helpers.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-jspdf-based-export-remains-compatible-with-the-current-pdf-content-generation-call-site-in-clientdetailpage-tsx-which-currently-passes-htmlcontent-from-generateclientpdf-client-mockdetaildata-without-changing-any-other-files",
+      "title": "Ensure the jsPDF-based export remains compatible with the current PDF content generation call site in `ClientDetailPage.tsx` (which currently passes `htmlContent` from `generateClientPDF(client, mockDetailData)`), without changing any other files.",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-rework-frontend-src-utils-pdfdownload-ts-so-downloadpdf-htmlcontent-filename-no-longer-uses-jspdf-html2canvas-including-any-dynamic-cdn-loading-and-instead-exports-via-a-simple-popup-window-print-flow-1-window-open-a-new-blank-popup-window-2-write-the-full-htmlcontent-into-the-popup-via-popupwindow-document-write-htmlcontent-3-set-popupwindow-document-title-to-the-provided-filename-example-hans-mueller-fes-2024-0001-2026-02-18-4-call-popupwindow-print-and-5-close-the-popup-after-printing",
+      "title": "Rework `frontend/src/utils/pdfDownload.ts` so `downloadPDF(htmlContent, filename)` no longer uses jsPDF/html2canvas (including any dynamic CDN loading), and instead exports via a simple popup-window print flow: (1) `window.open` a new blank popup window, (2) write the full `htmlContent` into the popup via `popupWindow.document.write(htmlContent)`, (3) set `popupWindow.document.title` to the provided `filename` (example: \"Hans_Mueller_FES-2024-0001_2026-02-18\"), (4) call `popupWindow.print()`, and (5) close the popup after printing.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-clientdetailpage-tsx-so-the-export-pdf-action-builds-a-filename-string-from-the-client-s-firstname-lastname-accountid-and-today-s-date-and-passes-that-filename-string-to-downloadpdf-pdfhtml-filename-keep-generateclientpdf-client-mockdetaildata-unchanged-and-keep-all-other-pages-unchanged",
+      "title": "Update `frontend/src/pages/ClientDetailPage.tsx` so the Export PDF action builds a filename string from the client’s `firstName`, `lastName`, `accountId`, and today’s date, and passes that filename string to `downloadPDF(pdfHtml, filename)`. Keep `generateClientPDF(client, mockDetailData)` unchanged and keep all other pages unchanged.",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -323,6 +504,50 @@
     {
       "id": "AR-21",
       "summary": "Clients page: ensure main content is not cut off by the ~220px sidebar (proper left margin/padding); add prominent \"Add Client\" button in top-right of header next to title linking to Add Client form; populate table with 5 realistic Swiss mock clients (Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin) including status, risk level, nationality, onboarding date",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Fix Add Client page: Create Client button must save to backend and navigate to Clients list; if backend save fails, store client locally and still navigate/show in list",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Update Add Client form fields/sections to match CRM: Contact Details (First/Last required, auto-generated Account ID FES-YYYY-NNNN, Email, Phone, Address, Primary Country) + Personal Data (DOB, Nationality, Passport Number/Expiry, Place of Birth, TIN); default Client Type=Individual with optional Entity",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Clients list: always show 5 Swiss mock clients even when backend returns empty; rows must be clickable and navigate to client detail page",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Extend the backend client data model and APIs so the backend can store the Add Client CRM fields (First Name, Last Name, Account ID, Email, Phone, Address, Primary Country, Date of Birth, Nationality, Passport Number, Passport Expiry Date, Place of Birth, TIN) while preserving existing client functionality.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Client Detail page: modify Overview tab only—replace Personal Information and Contact Details with 6 new sections (Contact Details, Personal Data, Mandate, Wallets, Compliance, VQF) and display specified fields/checkboxes/dates; keep all other pages unchanged",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Client Detail page: add \"Edit Client\" button next to Export PDF in header; toggles Overview tab’s 6 sections into editable inputs with Save/Cancel; on Save persist changes and append Activity Log audit entry per field change (timestamp, field name, old value, new value, user) for compliance",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Implement functional Export PDF on Client Detail page: generate/download a PDF containing all 6 Overview sections (Contact Details, Personal Data, Mandate, Wallets, Compliance, VQF) with HELVETICA header (logo text, client name, Account ID, current date), clean table layout, and filename ClientName_AccountID_Date.pdf; keep all other pages unchanged",
       "reqIds": [],
       "status": "pending"
     }

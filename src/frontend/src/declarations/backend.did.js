@@ -8,6 +8,14 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const Time = IDL.Int;
+export const ActivityLogEntry = IDL.Record({
+  'oldValue' : IDL.Text,
+  'user' : IDL.Text,
+  'newValue' : IDL.Text,
+  'timestamp' : Time,
+  'fieldName' : IDL.Text,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -19,7 +27,6 @@ export const ClientStatus = IDL.Variant({
   'onboarding' : IDL.Null,
   'offboarded' : IDL.Null,
 });
-export const Time = IDL.Int;
 export const ClientType = IDL.Variant({
   'entity' : IDL.Null,
   'individual' : IDL.Null,
@@ -45,13 +52,16 @@ export const OnboardingStep = IDL.Record({
 });
 export const ClientProfile = IDL.Record({
   'id' : IDL.Nat,
-  'dob' : IDL.Opt(IDL.Text),
+  'tin' : IDL.Text,
+  'placeOfBirth' : IDL.Text,
   'status' : ClientStatus,
   'onboardingDate' : IDL.Opt(Time),
+  'accountId' : IDL.Text,
   'clientType' : ClientType,
-  'name' : IDL.Text,
+  'dateOfBirth' : IDL.Text,
   'createdBy' : IDL.Principal,
   'createdDate' : Time,
+  'passportExpiryDate' : IDL.Text,
   'kycHistory' : IDL.Vec(KYCEntry),
   'nationality' : IDL.Text,
   'email' : IDL.Text,
@@ -61,8 +71,12 @@ export const ClientProfile = IDL.Record({
   'address' : IDL.Text,
   'riskJustification' : IDL.Text,
   'phone' : IDL.Text,
+  'passportNumber' : IDL.Text,
+  'primaryCountry' : IDL.Text,
+  'lastName' : IDL.Text,
   'riskLevel' : RiskLevel,
   'onboardingSteps' : IDL.Vec(OnboardingStep),
+  'firstName' : IDL.Text,
 });
 export const UserProfile = IDL.Record({
   'name' : IDL.Text,
@@ -91,9 +105,28 @@ export const OnboardingStage = IDL.Record({
   'cards' : IDL.Vec(OnboardingCard),
   'stageName' : IDL.Text,
 });
+export const OverviewFieldUpdate = IDL.Record({
+  'tin' : IDL.Opt(IDL.Text),
+  'placeOfBirth' : IDL.Opt(IDL.Text),
+  'dateOfBirth' : IDL.Opt(IDL.Text),
+  'passportExpiryDate' : IDL.Opt(IDL.Text),
+  'nationality' : IDL.Opt(IDL.Text),
+  'email' : IDL.Opt(IDL.Text),
+  'address' : IDL.Opt(IDL.Text),
+  'phone' : IDL.Opt(IDL.Text),
+  'passportNumber' : IDL.Opt(IDL.Text),
+  'primaryCountry' : IDL.Opt(IDL.Text),
+  'lastName' : IDL.Opt(IDL.Text),
+  'firstName' : IDL.Opt(IDL.Text),
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'appendActivityLogEntries' : IDL.Func(
+      [IDL.Nat, IDL.Vec(ActivityLogEntry)],
+      [],
+      [],
+    ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createClient' : IDL.Func([ClientProfile], [IDL.Nat], []),
   'deleteClient' : IDL.Func([IDL.Nat], [], []),
@@ -101,6 +134,7 @@ export const idlService = IDL.Service({
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getClient' : IDL.Func([IDL.Nat], [ClientProfile], ['query']),
+  'getClientActivityLog' : IDL.Func([IDL.Nat], [IDL.Vec(IDL.Text)], ['query']),
   'getDashboardStats' : IDL.Func([], [DashboardStats], ['query']),
   'getOnboardingPipeline' : IDL.Func([], [IDL.Vec(OnboardingStage)], ['query']),
   'getUserProfile' : IDL.Func(
@@ -116,11 +150,24 @@ export const idlService = IDL.Service({
     ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'updateClient' : IDL.Func([IDL.Nat, ClientProfile], [], []),
+  'updateClientOverviewFields' : IDL.Func(
+      [IDL.Nat, OverviewFieldUpdate],
+      [],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const Time = IDL.Int;
+  const ActivityLogEntry = IDL.Record({
+    'oldValue' : IDL.Text,
+    'user' : IDL.Text,
+    'newValue' : IDL.Text,
+    'timestamp' : Time,
+    'fieldName' : IDL.Text,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -132,7 +179,6 @@ export const idlFactory = ({ IDL }) => {
     'onboarding' : IDL.Null,
     'offboarded' : IDL.Null,
   });
-  const Time = IDL.Int;
   const ClientType = IDL.Variant({
     'entity' : IDL.Null,
     'individual' : IDL.Null,
@@ -158,13 +204,16 @@ export const idlFactory = ({ IDL }) => {
   });
   const ClientProfile = IDL.Record({
     'id' : IDL.Nat,
-    'dob' : IDL.Opt(IDL.Text),
+    'tin' : IDL.Text,
+    'placeOfBirth' : IDL.Text,
     'status' : ClientStatus,
     'onboardingDate' : IDL.Opt(Time),
+    'accountId' : IDL.Text,
     'clientType' : ClientType,
-    'name' : IDL.Text,
+    'dateOfBirth' : IDL.Text,
     'createdBy' : IDL.Principal,
     'createdDate' : Time,
+    'passportExpiryDate' : IDL.Text,
     'kycHistory' : IDL.Vec(KYCEntry),
     'nationality' : IDL.Text,
     'email' : IDL.Text,
@@ -174,8 +223,12 @@ export const idlFactory = ({ IDL }) => {
     'address' : IDL.Text,
     'riskJustification' : IDL.Text,
     'phone' : IDL.Text,
+    'passportNumber' : IDL.Text,
+    'primaryCountry' : IDL.Text,
+    'lastName' : IDL.Text,
     'riskLevel' : RiskLevel,
     'onboardingSteps' : IDL.Vec(OnboardingStep),
+    'firstName' : IDL.Text,
   });
   const UserProfile = IDL.Record({
     'name' : IDL.Text,
@@ -204,9 +257,28 @@ export const idlFactory = ({ IDL }) => {
     'cards' : IDL.Vec(OnboardingCard),
     'stageName' : IDL.Text,
   });
+  const OverviewFieldUpdate = IDL.Record({
+    'tin' : IDL.Opt(IDL.Text),
+    'placeOfBirth' : IDL.Opt(IDL.Text),
+    'dateOfBirth' : IDL.Opt(IDL.Text),
+    'passportExpiryDate' : IDL.Opt(IDL.Text),
+    'nationality' : IDL.Opt(IDL.Text),
+    'email' : IDL.Opt(IDL.Text),
+    'address' : IDL.Opt(IDL.Text),
+    'phone' : IDL.Opt(IDL.Text),
+    'passportNumber' : IDL.Opt(IDL.Text),
+    'primaryCountry' : IDL.Opt(IDL.Text),
+    'lastName' : IDL.Opt(IDL.Text),
+    'firstName' : IDL.Opt(IDL.Text),
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'appendActivityLogEntries' : IDL.Func(
+        [IDL.Nat, IDL.Vec(ActivityLogEntry)],
+        [],
+        [],
+      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createClient' : IDL.Func([ClientProfile], [IDL.Nat], []),
     'deleteClient' : IDL.Func([IDL.Nat], [], []),
@@ -214,6 +286,11 @@ export const idlFactory = ({ IDL }) => {
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getClient' : IDL.Func([IDL.Nat], [ClientProfile], ['query']),
+    'getClientActivityLog' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
     'getDashboardStats' : IDL.Func([], [DashboardStats], ['query']),
     'getOnboardingPipeline' : IDL.Func(
         [],
@@ -233,6 +310,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'updateClient' : IDL.Func([IDL.Nat, ClientProfile], [], []),
+    'updateClientOverviewFields' : IDL.Func(
+        [IDL.Nat, OverviewFieldUpdate],
+        [],
+        [],
+      ),
   });
 };
 

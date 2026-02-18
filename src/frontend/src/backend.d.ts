@@ -7,11 +7,6 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface KYCEntry {
-    result: string;
-    date: Time;
-    notes: string;
-}
 export type Time = bigint;
 export interface OnboardingCard {
     clientId: bigint;
@@ -20,31 +15,6 @@ export interface OnboardingCard {
     stepNumber: bigint;
     assignedPerson: string;
     stepStatus: string;
-}
-export interface ClientProfile {
-    id: bigint;
-    dob?: string;
-    status: ClientStatus;
-    onboardingDate?: Time;
-    clientType: ClientType;
-    name: string;
-    createdBy: Principal;
-    createdDate: Time;
-    kycHistory: Array<KYCEntry>;
-    nationality: string;
-    email: string;
-    activityLog: Array<string>;
-    kycReviewDue?: Time;
-    relationshipManager: Principal;
-    address: string;
-    riskJustification: string;
-    phone: string;
-    riskLevel: RiskLevel;
-    onboardingSteps: Array<OnboardingStep>;
-}
-export interface OnboardingStage {
-    cards: Array<OnboardingCard>;
-    stageName: string;
 }
 export interface OnboardingStep {
     status: string;
@@ -64,6 +34,64 @@ export interface DashboardStats {
     totalClients: bigint;
     activeCount: bigint;
     onboardingCount: bigint;
+}
+export interface ActivityLogEntry {
+    oldValue: string;
+    user: string;
+    newValue: string;
+    timestamp: Time;
+    fieldName: string;
+}
+export interface OverviewFieldUpdate {
+    tin?: string;
+    placeOfBirth?: string;
+    dateOfBirth?: string;
+    passportExpiryDate?: string;
+    nationality?: string;
+    email?: string;
+    address?: string;
+    phone?: string;
+    passportNumber?: string;
+    primaryCountry?: string;
+    lastName?: string;
+    firstName?: string;
+}
+export interface KYCEntry {
+    result: string;
+    date: Time;
+    notes: string;
+}
+export interface ClientProfile {
+    id: bigint;
+    tin: string;
+    placeOfBirth: string;
+    status: ClientStatus;
+    onboardingDate?: Time;
+    accountId: string;
+    clientType: ClientType;
+    dateOfBirth: string;
+    createdBy: Principal;
+    createdDate: Time;
+    passportExpiryDate: string;
+    kycHistory: Array<KYCEntry>;
+    nationality: string;
+    email: string;
+    activityLog: Array<string>;
+    kycReviewDue?: Time;
+    relationshipManager: Principal;
+    address: string;
+    riskJustification: string;
+    phone: string;
+    passportNumber: string;
+    primaryCountry: string;
+    lastName: string;
+    riskLevel: RiskLevel;
+    onboardingSteps: Array<OnboardingStep>;
+    firstName: string;
+}
+export interface OnboardingStage {
+    cards: Array<OnboardingCard>;
+    stageName: string;
 }
 export interface UserProfile {
     name: string;
@@ -91,6 +119,7 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    appendActivityLogEntries(clientId: bigint, entries: Array<ActivityLogEntry>): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createClient(profile: ClientProfile): Promise<bigint>;
     deleteClient(id: bigint): Promise<void>;
@@ -98,6 +127,7 @@ export interface backendInterface {
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getClient(id: bigint): Promise<ClientProfile>;
+    getClientActivityLog(clientId: bigint): Promise<Array<string>>;
     getDashboardStats(): Promise<DashboardStats>;
     getOnboardingPipeline(): Promise<Array<OnboardingStage>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -105,4 +135,5 @@ export interface backendInterface {
     moveClientToStage(clientId: bigint, stepNumber: bigint, status: string, assignedPerson: string, dueDate: Time | null): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateClient(id: bigint, updatedProfile: ClientProfile): Promise<void>;
+    updateClientOverviewFields(id: bigint, updates: OverviewFieldUpdate): Promise<void>;
 }

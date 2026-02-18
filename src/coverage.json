@@ -1,48 +1,35 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T08:11:05.136Z",
+  "generatedAt": "2026-02-18T10:12:46.482Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
-        "id": "REQ-25",
-        "summary": "Fix the layout so the Clients page main content (page title and search bar) is not overlapped/cut off by the left sidebar; ensure the main content starts after the ~220px sidebar by applying a correct left inset (margin or padding) at the application layout level.",
+        "id": "REQ-49",
+        "summary": "Rework `frontend/src/utils/pdfDownload.ts` so `downloadPDF(htmlContent, filename)` no longer uses jsPDF/html2canvas (including any dynamic CDN loading), and instead exports via a simple popup-window print flow: (1) `window.open` a new blank popup window, (2) write the full `htmlContent` into the popup via `popupWindow.document.write(htmlContent)`, (3) set `popupWindow.document.title` to the provided `filename` (example: \"Hans_Mueller_FES-2024-0001_2026-02-18\"), (4) call `popupWindow.print()`, and (5) close the popup after printing.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/AppLayout.tsx"
+          "frontend/src/utils/pdfDownload.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/AppLayout.tsx"
+          "frontend/src/utils/pdfDownload.ts"
         ]
       },
       {
-        "id": "REQ-26",
-        "summary": "Add a prominent \"Add Client\" button in the Clients page header area, aligned to the top-right next to the \"Clients\" title, that navigates to the Add Client form route at \"/add-client\".",
+        "id": "REQ-50",
+        "summary": "Update `frontend/src/pages/ClientDetailPage.tsx` so the Export PDF action builds a filename string from the client’s `firstName`, `lastName`, `accountId`, and today’s date, and passes that filename string to `downloadPDF(pdfHtml, filename)`. Keep `generateClientPDF(client, mockDetailData)` unchanged and keep all other pages unchanged.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ClientsPage.tsx"
+          "frontend/src/pages/ClientDetailPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/ClientsPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-27",
-        "summary": "Populate the Clients table with 5 realistic Swiss-oriented mock client rows when the backend returns an empty client list, using these names: Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin; each mock row must include realistic status, risk level, nationality, and onboarding date values so the table does not appear empty.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/mocks/clientsListMock.ts",
-          "frontend/src/pages/ClientsPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/mocks/clientsListMock.ts",
-          "frontend/src/pages/ClientsPage.tsx"
+          "frontend/src/pages/ClientDetailPage.tsx"
         ]
       }
     ]
@@ -52,9 +39,8 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/AppLayout.tsx",
-    "frontend/src/mocks/clientsListMock.ts",
-    "frontend/src/pages/ClientsPage.tsx",
+    "frontend/src/pages/ClientDetailPage.tsx",
+    "frontend/src/utils/pdfDownload.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

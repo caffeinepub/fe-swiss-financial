@@ -1,33 +1,33 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T08:11:05.133Z",
-  "summary": "REQ-25 and REQ-26 appear implemented (shared layout left inset for sidebar; Add Client CTA in Clients header navigating to /add-client). REQ-27 is only partially met: 5 Swiss-oriented mock clients are seeded when backend list is empty, but at least one mock row has an undefined onboarding date, which violates the requirement that each mock row include a non-empty onboarding date value; additionally, the fallback logic does not explicitly gate on \"not loading\".",
+  "generatedAt": "2026-02-18T10:12:46.478Z",
+  "summary": "REQ-49 appears implemented in pdfDownload.ts via a popup-window print flow with graceful failure handling and afterprint-based closing. REQ-50 cannot be fully verified from the truncated ClientDetailPage.tsx diff (the export handler/filename construction is not shown). Two additional files (frontend-file-summaries.txt and project_state.json) were modified despite the request to keep changes scoped to pdfDownload.ts and ClientDetailPage.tsx.",
   "missing_requirements": [
     {
-      "id": "REQ-27",
-      "requirement": "Each mock row must include realistic status, risk level, nationality, relationship manager, and onboarding date values so the table does not appear empty.",
-      "reason": "One of the 5 mock clients has `onboardingDate: undefined` (and `kycReviewDue: undefined`), so the Onboarding Date column may be empty for that row, violating the AC that each mock row displays a non-empty onboarding date.",
+      "id": "REQ-50",
+      "requirement": "Update ClientDetailPage.tsx so Export PDF builds a filename from firstName, lastName, accountId, and today’s date, and passes that filename to downloadPDF(pdfHtml, filename), keeping generateClientPDF unchanged.",
+      "reason": "The provided diff for ClientDetailPage.tsx is truncated before the Export PDF action/handler, so there is no direct evidence that the filename is constructed as required and passed to downloadPDF.",
       "evidence": [
-        "frontend/src/mocks/clientsListMock.ts"
-      ]
-    },
-    {
-      "id": "REQ-27",
-      "requirement": "If the backend client list is empty (and not loading), the Clients table renders exactly 5 mock rows; mock rows are not shown while loading.",
-      "reason": "The fallback selection uses `clients.length === 0 ? mockClients : clients` and does not include an explicit `!isLoading` guard; if the query returns an empty array during loading or intermediate states, mocks could appear prematurely. The diff snippet does not show any additional gating later in the render.",
-      "evidence": [
-        "frontend/src/pages/ClientsPage.tsx"
+        "frontend/src/pages/ClientDetailPage.tsx (truncated)"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.68,
+  "hallucinated_features": [
+    {
+      "description": "Modified project metadata/state files unrelated to the requested functional change scope (frontend-file-summaries.txt and project_state.json).",
+      "reason": "BuildRequest constraints specify keeping all other pages/features unchanged outside frontend/src/utils/pdfDownload.ts and frontend/src/pages/ClientDetailPage.tsx; these additional file modifications were not requested.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "project_state.json"
+      ]
+    }
+  ],
+  "confidence": 0.64,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/AppLayout.tsx",
-    "frontend/src/mocks/clientsListMock.ts",
-    "frontend/src/pages/ClientsPage.tsx",
+    "frontend/src/pages/ClientDetailPage.tsx",
+    "frontend/src/utils/pdfDownload.ts",
     "project_state.json"
   ]
 }

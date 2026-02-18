@@ -1,130 +1,129 @@
 import type { ClientStatus, RiskLevel, Time } from '../backend';
 
-export function formatDate(timestamp: bigint): string {
-  const milliseconds = Number(timestamp / BigInt(1_000_000));
-  const date = new Date(milliseconds);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+export function formatDate(timestamp: Time | bigint | number | undefined): string {
+  if (!timestamp) return 'N/A';
+  
+  try {
+    const ms = typeof timestamp === 'bigint' 
+      ? Number(timestamp / BigInt(1000000))
+      : typeof timestamp === 'number'
+      ? timestamp
+      : 0;
+    
+    const date = new Date(ms);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch (error) {
+    return 'Invalid Date';
+  }
 }
 
-export function formatDateOrPlaceholder(timestamp: Time | undefined | null): string {
-  if (!timestamp) {
-    return 'No due date';
-  }
+export function formatDateOrPlaceholder(timestamp: Time | bigint | number | undefined): string {
+  if (!timestamp) return 'No date set';
   return formatDate(timestamp);
 }
 
-export function getStatusLabel(status: ClientStatus): string {
-  const labels: Record<ClientStatus, string> = {
+export function formatActivityLogTimestamp(timestamp: string): string {
+  try {
+    // Parse bigint timestamp (nanoseconds)
+    const ns = BigInt(timestamp);
+    const ms = Number(ns / BigInt(1000000));
+    const date = new Date(ms);
+    
+    return date.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  } catch (error) {
+    return timestamp;
+  }
+}
+
+export function formatClientId(id: bigint | number): string {
+  return `#${id.toString().padStart(6, '0')}`;
+}
+
+export function getStatusLabel(status: ClientStatus | string): string {
+  const statusMap: Record<string, string> = {
     prospect: 'Prospect',
     onboarding: 'Onboarding',
     active: 'Active',
     offboarded: 'Offboarded',
   };
-  return labels[status] || status;
+  return statusMap[status] || status;
 }
 
-export function getRiskLabel(risk: RiskLevel): string {
-  const labels: Record<RiskLevel, string> = {
+export function getRiskLabel(riskLevel: RiskLevel | string): string {
+  const riskMap: Record<string, string> = {
     low: 'Low Risk',
     medium: 'Medium Risk',
     high: 'High Risk',
   };
-  return labels[risk] || risk;
+  return riskMap[riskLevel] || riskLevel;
 }
 
-// Format client ID in HEL-YYYY-NNNN format
-export function formatClientId(clientId: number): string {
-  const year = new Date().getFullYear();
-  const paddedId = String(clientId).padStart(4, '0');
-  return `HEL-${year}-${paddedId}`;
-}
+// Backward compatible version for Overview tab
+export function formatExpiryStatus(expiryDate: string): { text: string; color: string } {
+  const today = new Date();
+  const expiry = new Date(expiryDate);
+  const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-// Format date as YYYY-MM-DD
-export function formatDateYYYYMMDD(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
-  } catch {
-    return dateString;
+  if (daysUntilExpiry < 0) {
+    return { text: 'Expired', color: 'text-red-600' };
+  } else if (daysUntilExpiry <= 30) {
+    return { text: `Expires in ${daysUntilExpiry} days`, color: 'text-red-600' };
+  } else if (daysUntilExpiry <= 90) {
+    return { text: `Expires in ${daysUntilExpiry} days`, color: 'text-orange-600' };
+  } else {
+    return { text: `Valid (${daysUntilExpiry} days)`, color: 'text-green-600' };
   }
 }
 
-// Calculate days until a date
-export function daysUntilDate(dateString: string): number {
-  try {
-    const targetDate = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    targetDate.setHours(0, 0, 0, 0);
-    const diffTime = targetDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  } catch {
-    return 0;
-  }
-}
-
-// Format expiry status with countdown (for Overview tab - maintains backward compatibility)
-export function formatExpiryStatus(expiryDate: string): {
-  text: string;
-  variant: 'default' | 'warning' | 'error';
+// Detailed version for Identity & KYC tab with color thresholds
+export function formatExpiryStatusDetailed(expiryDate: string): { 
+  text: string; 
+  color: string;
+  bgColor: string;
+  borderColor: string;
 } {
-  const days = daysUntilDate(expiryDate);
-  
-  if (days < 0) {
-    return {
-      text: 'Expired',
-      variant: 'error',
+  const today = new Date();
+  const expiry = new Date(expiryDate);
+  const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysUntilExpiry < 0) {
+    return { 
+      text: `Expired ${Math.abs(daysUntilExpiry)} days ago`, 
+      color: 'text-red-700',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-200'
     };
-  } else if (days < 60) {
-    return {
-      text: `Expires in ${days} days`,
-      variant: 'warning',
+  } else if (daysUntilExpiry <= 30) {
+    return { 
+      text: `Expires in ${daysUntilExpiry} days`, 
+      color: 'text-red-700',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-200'
+    };
+  } else if (daysUntilExpiry <= 90) {
+    return { 
+      text: `Expires in ${daysUntilExpiry} days`, 
+      color: 'text-orange-700',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-200'
     };
   } else {
-    return {
-      text: `Expires in ${days} days`,
-      variant: 'default',
-    };
-  }
-}
-
-// Format expiry status with color coding for Identity & KYC tab
-// Green: > 90 days, Orange: 30-90 days, Red: < 30 days or expired
-export function formatExpiryStatusDetailed(expiryDate: string): {
-  text: string;
-  color: 'green' | 'orange' | 'red';
-  days: number;
-} {
-  const days = daysUntilDate(expiryDate);
-  
-  if (days < 0) {
-    return {
-      text: 'Expired',
-      color: 'red',
-      days,
-    };
-  } else if (days < 30) {
-    return {
-      text: `Expires in ${days} days`,
-      color: 'red',
-      days,
-    };
-  } else if (days <= 90) {
-    return {
-      text: `Expires in ${days} days`,
-      color: 'orange',
-      days,
-    };
-  } else {
-    return {
-      text: `Expires in ${days} days`,
-      color: 'green',
-      days,
+    return { 
+      text: `Valid for ${daysUntilExpiry} days`, 
+      color: 'text-green-700',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200'
     };
   }
 }

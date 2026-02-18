@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { ClientProfile, DashboardStats, UserProfile, OnboardingStage } from '../backend';
+import type { ClientProfile, DashboardStats, UserProfile, OnboardingStage, OverviewFieldUpdate, ActivityLogEntry } from '../backend';
 
 // User Profile Queries
 export function useGetCallerUserProfile() {
@@ -96,6 +96,52 @@ export function useCreateClient() {
   });
 }
 
+// Overview Field Updates
+export function useUpdateClientOverviewFields() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: bigint; updates: OverviewFieldUpdate }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateClientOverviewFields(id, updates);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['client', Number(variables.id)] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+}
+
+// Activity Log
+export function useGetClientActivityLog(clientId: bigint) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<string[]>({
+    queryKey: ['clientActivityLog', clientId.toString()],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getClientActivityLog(clientId);
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAppendActivityLogEntries() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ clientId, entries }: { clientId: bigint; entries: ActivityLogEntry[] }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.appendActivityLogEntries(clientId, entries);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['clientActivityLog', variables.clientId.toString()] });
+    },
+  });
+}
+
 // Onboarding Pipeline Queries
 export function useGetOnboardingPipeline() {
   const { actor, isFetching } = useActor();
@@ -133,8 +179,6 @@ export function useMoveClientToStage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['onboardingPipeline'] });
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['client'] });
     },
   });
 }

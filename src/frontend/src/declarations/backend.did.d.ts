@@ -10,15 +10,25 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface ActivityLogEntry {
+  'oldValue' : string,
+  'user' : string,
+  'newValue' : string,
+  'timestamp' : Time,
+  'fieldName' : string,
+}
 export interface ClientProfile {
   'id' : bigint,
-  'dob' : [] | [string],
+  'tin' : string,
+  'placeOfBirth' : string,
   'status' : ClientStatus,
   'onboardingDate' : [] | [Time],
+  'accountId' : string,
   'clientType' : ClientType,
-  'name' : string,
+  'dateOfBirth' : string,
   'createdBy' : Principal,
   'createdDate' : Time,
+  'passportExpiryDate' : string,
   'kycHistory' : Array<KYCEntry>,
   'nationality' : string,
   'email' : string,
@@ -28,8 +38,12 @@ export interface ClientProfile {
   'address' : string,
   'riskJustification' : string,
   'phone' : string,
+  'passportNumber' : string,
+  'primaryCountry' : string,
+  'lastName' : string,
   'riskLevel' : RiskLevel,
   'onboardingSteps' : Array<OnboardingStep>,
+  'firstName' : string,
 }
 export type ClientStatus = { 'active' : null } |
   { 'prospect' : null } |
@@ -69,6 +83,20 @@ export interface OnboardingStep {
   'stepNumber' : bigint,
   'assignedPerson' : string,
 }
+export interface OverviewFieldUpdate {
+  'tin' : [] | [string],
+  'placeOfBirth' : [] | [string],
+  'dateOfBirth' : [] | [string],
+  'passportExpiryDate' : [] | [string],
+  'nationality' : [] | [string],
+  'email' : [] | [string],
+  'address' : [] | [string],
+  'phone' : [] | [string],
+  'passportNumber' : [] | [string],
+  'primaryCountry' : [] | [string],
+  'lastName' : [] | [string],
+  'firstName' : [] | [string],
+}
 export type RiskLevel = { 'low' : null } |
   { 'high' : null } |
   { 'medium' : null };
@@ -83,6 +111,10 @@ export type UserRole = { 'admin' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'appendActivityLogEntries' : ActorMethod<
+    [bigint, Array<ActivityLogEntry>],
+    undefined
+  >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createClient' : ActorMethod<[ClientProfile], bigint>,
   'deleteClient' : ActorMethod<[bigint], undefined>,
@@ -90,6 +122,7 @@ export interface _SERVICE {
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getClient' : ActorMethod<[bigint], ClientProfile>,
+  'getClientActivityLog' : ActorMethod<[bigint], Array<string>>,
   'getDashboardStats' : ActorMethod<[], DashboardStats>,
   'getOnboardingPipeline' : ActorMethod<[], Array<OnboardingStage>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
@@ -100,6 +133,10 @@ export interface _SERVICE {
   >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'updateClient' : ActorMethod<[bigint, ClientProfile], undefined>,
+  'updateClientOverviewFields' : ActorMethod<
+    [bigint, OverviewFieldUpdate],
+    undefined
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

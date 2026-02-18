@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useCreateClient } from '../hooks/useQueries';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
@@ -15,7 +15,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { generateAccountId, saveLocalClient, getNextLocalClientId } from '../utils/localClients';
 import type { ClientType, ClientStatus, RiskLevel } from '../backend';
 
 export default function AddClientPage() {
@@ -23,39 +24,69 @@ export default function AddClientPage() {
   const { identity } = useInternetIdentity();
   const createClient = useCreateClient();
 
+  // Generate stable Account ID once on mount
+  const [accountId] = useState(() => generateAccountId());
+
   const [formData, setFormData] = useState({
-    name: '',
-    dob: '',
-    nationality: '',
-    address: '',
-    phone: '',
+    firstName: '',
+    lastName: '',
     email: '',
+    phone: '',
+    address: '',
+    primaryCountry: '',
+    dateOfBirth: '',
+    nationality: '',
+    passportNumber: '',
+    passportExpiryDate: '',
+    placeOfBirth: '',
+    tin: '',
     clientType: 'individual' as ClientType,
-    status: 'prospect' as ClientStatus,
-    riskLevel: 'low' as RiskLevel,
-    riskJustification: '',
   });
 
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [validationError, setValidationError] = useState('');
+  const [fallbackError, setFallbackError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError('');
+    setFallbackError('');
 
-    if (!identity) return;
+    // Validate required fields
+    if (!formData.firstName.trim()) {
+      setValidationError('First Name is required');
+      return;
+    }
+    if (!formData.lastName.trim()) {
+      setValidationError('Last Name is required');
+      return;
+    }
+
+    if (!identity) {
+      setValidationError('You must be logged in to create a client');
+      return;
+    }
 
     const clientProfile = {
-      name: formData.name,
-      dob: formData.dob || undefined,
-      nationality: formData.nationality,
-      address: formData.address,
-      phone: formData.phone,
-      email: formData.email,
+      id: BigInt(0), // Backend will assign
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      accountId,
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      address: formData.address.trim(),
+      primaryCountry: formData.primaryCountry.trim(),
+      dateOfBirth: formData.dateOfBirth,
+      nationality: formData.nationality.trim(),
+      passportNumber: formData.passportNumber.trim(),
+      passportExpiryDate: formData.passportExpiryDate,
+      placeOfBirth: formData.placeOfBirth.trim(),
+      tin: formData.tin.trim(),
       clientType: formData.clientType,
-      status: formData.status,
-      riskLevel: formData.riskLevel,
-      riskJustification: formData.riskJustification,
+      status: 'prospect' as ClientStatus,
+      riskLevel: 'low' as RiskLevel,
+      riskJustification: '',
       relationshipManager: identity.getPrincipal(),
-      onboardingDate: BigInt(Date.now() * 1_000_000),
+      onboardingDate: undefined,
       kycReviewDue: undefined,
       kycHistory: [],
       onboardingSteps: [],
@@ -64,16 +95,33 @@ export default function AddClientPage() {
       createdDate: BigInt(Date.now() * 1_000_000),
     };
 
-    const clientId = await createClient.mutateAsync(clientProfile);
-    setShowSuccess(true);
-
-    setTimeout(() => {
-      navigate({ to: '/clients/$clientId', params: { clientId: clientId.toString() } });
-    }, 1500);
+    try {
+      // Attempt backend save
+      await createClient.mutateAsync(clientProfile);
+      // Success - navigate to clients list
+      navigate({ to: '/clients' });
+    } catch (error) {
+      // Backend failed - save locally and still navigate
+      console.error('Backend save failed, storing locally:', error);
+      
+      const localClient = {
+        ...clientProfile,
+        id: getNextLocalClientId(),
+      };
+      
+      saveLocalClient(localClient);
+      setFallbackError('Client saved locally. Backend sync failed but your data is safe.');
+      
+      // Navigate after brief delay to show message
+      setTimeout(() => {
+        navigate({ to: '/clients' });
+      }, 2000);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setValidationError('');
   };
 
   return (
@@ -94,164 +142,215 @@ export default function AddClientPage() {
         </div>
       </div>
 
-      {showSuccess && (
-        <Alert className="border-green-600 bg-green-50 dark:bg-green-950">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-600">
-            Client created successfully! Redirecting to client profile...
+      {validationError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{validationError}</AlertDescription>
+        </Alert>
+      )}
+
+      {fallbackError && (
+        <Alert className="border-orange-600 bg-orange-50 dark:bg-orange-950">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-600">
+            {fallbackError}
           </AlertDescription>
         </Alert>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* CONTACT DETAILS Section */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-medium">Basic Information</CardTitle>
+            <CardTitle className="text-base font-medium uppercase tracking-wide text-muted-foreground">
+              Contact Details
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name *</Label>
+                <Label htmlFor="firstName">First Name *</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  placeholder="Enter client name"
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => handleChange('firstName', e.target.value)}
+                  placeholder="Enter first name"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="clientType">Client Type *</Label>
-                <Select
-                  value={formData.clientType}
-                  onValueChange={(value) => handleChange('clientType', value)}
-                >
-                  <SelectTrigger id="clientType">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="individual">Individual</SelectItem>
-                    <SelectItem value="entity">Entity</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="dob">Date of Birth</Label>
+                <Label htmlFor="lastName">Last Name *</Label>
                 <Input
-                  id="dob"
-                  type="date"
-                  value={formData.dob}
-                  onChange={(e) => handleChange('dob', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="nationality">Nationality *</Label>
-                <Input
-                  id="nationality"
-                  value={formData.nationality}
-                  onChange={(e) => handleChange('nationality', e.target.value)}
-                  placeholder="Enter nationality"
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => handleChange('lastName', e.target.value)}
+                  placeholder="Enter last name"
                   required
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-medium">Contact Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="address">Address *</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => handleChange('address', e.target.value)}
-                placeholder="Enter full address"
-                required
+              <Label htmlFor="accountId">Account ID</Label>
+              <Input
+                id="accountId"
+                value={accountId}
+                disabled
+                className="bg-muted"
               />
             </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone *</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  placeholder="+41 XX XXX XX XX"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
                   placeholder="client@example.com"
-                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleChange('phone', e.target.value)}
+                  placeholder="+41 XX XXX XX XX"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea
+                id="address"
+                value={formData.address}
+                onChange={(e) => handleChange('address', e.target.value)}
+                placeholder="Enter full address"
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="primaryCountry">Primary Country</Label>
+              <Select
+                value={formData.primaryCountry}
+                onValueChange={(value) => handleChange('primaryCountry', value)}
+              >
+                <SelectTrigger id="primaryCountry">
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Switzerland">Switzerland</SelectItem>
+                  <SelectItem value="Germany">Germany</SelectItem>
+                  <SelectItem value="France">France</SelectItem>
+                  <SelectItem value="Italy">Italy</SelectItem>
+                  <SelectItem value="Austria">Austria</SelectItem>
+                  <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                  <SelectItem value="United States">United States</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* PERSONAL DATA Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base font-medium uppercase tracking-wide text-muted-foreground">
+              Personal Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={formData.dateOfBirth}
+                  onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nationality">Nationality</Label>
+                <Input
+                  id="nationality"
+                  value={formData.nationality}
+                  onChange={(e) => handleChange('nationality', e.target.value)}
+                  placeholder="Enter nationality"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="passportNumber">Passport Number</Label>
+                <Input
+                  id="passportNumber"
+                  value={formData.passportNumber}
+                  onChange={(e) => handleChange('passportNumber', e.target.value)}
+                  placeholder="Enter passport number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="passportExpiryDate">Passport Expiry Date</Label>
+                <Input
+                  id="passportExpiryDate"
+                  type="date"
+                  value={formData.passportExpiryDate}
+                  onChange={(e) => handleChange('passportExpiryDate', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="placeOfBirth">Place of Birth</Label>
+                <Input
+                  id="placeOfBirth"
+                  value={formData.placeOfBirth}
+                  onChange={(e) => handleChange('placeOfBirth', e.target.value)}
+                  placeholder="Enter place of birth"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tin">TIN (Tax ID)</Label>
+                <Input
+                  id="tin"
+                  value={formData.tin}
+                  onChange={(e) => handleChange('tin', e.target.value)}
+                  placeholder="Enter tax identification number"
                 />
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Client Type */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-medium">Client Classification</CardTitle>
+            <CardTitle className="text-base font-medium">Client Type</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => handleChange('status', value)}
-                >
-                  <SelectTrigger id="status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="prospect">Prospect</SelectItem>
-                    <SelectItem value="onboarding">Onboarding</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="offboarded">Offboarded</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="riskLevel">Risk Level</Label>
-                <Select
-                  value={formData.riskLevel}
-                  onValueChange={(value) => handleChange('riskLevel', value)}
-                >
-                  <SelectTrigger id="riskLevel">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+          <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="riskJustification">Risk Justification</Label>
-              <Textarea
-                id="riskJustification"
-                value={formData.riskJustification}
-                onChange={(e) => handleChange('riskJustification', e.target.value)}
-                placeholder="Provide justification for the risk level"
-                rows={3}
-              />
+              <Label htmlFor="clientType">Type</Label>
+              <Select
+                value={formData.clientType}
+                onValueChange={(value) => handleChange('clientType', value)}
+              >
+                <SelectTrigger id="clientType">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">Individual</SelectItem>
+                  <SelectItem value="entity">Entity</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>

@@ -1,73 +1,58 @@
 {
   "kind": "build_request",
-  "title": "Fix Clients page sidebar overlap, add Add Client CTA, and seed mock client rows",
+  "title": "Revert Export PDF to popup-window print flow (no jsPDF)",
   "projectName": "FE Swiss CRM",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-25",
-      "text": "Fix the layout so the Clients page main content (page title and search bar) is not overlapped/cut off by the left sidebar; ensure the main content starts after the ~220px sidebar by applying a correct left inset (margin or padding) at the application layout level.",
+      "id": "REQ-49",
+      "text": "Rework `frontend/src/utils/pdfDownload.ts` so `downloadPDF(htmlContent, filename)` no longer uses jsPDF/html2canvas (including any dynamic CDN loading), and instead exports via a simple popup-window print flow: (1) `window.open` a new blank popup window, (2) write the full `htmlContent` into the popup via `popupWindow.document.write(htmlContent)`, (3) set `popupWindow.document.title` to the provided `filename` (example: \"Hans_Mueller_FES-2024-0001_2026-02-18\"), (4) call `popupWindow.print()`, and (5) close the popup after printing.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "The main content area is still being cut off by the sidebar on the left side... The sidebar is about 220px wide so the main content should start after that."
+          "In pdfDownload.ts, the downloadPDF function should: 1) Use window.open to open a new blank popup window. 2) Write the full HTML content into the popup window using popupWindow.document.write(htmlContent). 3) Set popupWindow.document.title to the desired filename like \"Hans_Mueller_FES-2024-0001_2026-02-18\". 4) Call popupWindow.print(). 5) Close the popup after printing."
         ]
       },
       "acceptanceCriteria": [
-        "When viewing /clients, the page title and the search input are fully visible and not hidden behind the sidebar.",
-        "The main content area has a consistent left inset that accounts for an approximately 220px-wide sidebar on desktop-sized viewports.",
-        "The fix is applied in a shared layout/container (not only by hardcoding spacing in one specific page) so other pages do not regress."
+        "`downloadPDF()` does not load or reference jsPDF or html2canvas and does not use Blob/objectURL download logic.",
+        "Calling `downloadPDF(htmlContent, filename)` opens a new window and writes `htmlContent` into it via `document.write`.",
+        "The popup window’s `document.title` is set exactly to the passed `filename` string before calling `print()`.",
+        "`popupWindow.print()` is invoked and the popup window is closed after the print dialog completes (use an `afterprint`-based mechanism and a safe fallback if needed).",
+        "If the popup cannot be opened (e.g., blocked), `downloadPDF()` fails gracefully with a clear English message (console error is acceptable; a simple user-facing alert is also acceptable)."
       ]
     },
     {
-      "id": "REQ-26",
-      "text": "Add a prominent \"Add Client\" button in the Clients page header area, aligned to the top-right next to the \"Clients\" title, that navigates to the Add Client form route at \"/add-client\".",
+      "id": "REQ-50",
+      "text": "Update `frontend/src/pages/ClientDetailPage.tsx` so the Export PDF action builds a filename string from the client’s `firstName`, `lastName`, `accountId`, and today’s date, and passes that filename string to `downloadPDF(pdfHtml, filename)`. Keep `generateClientPDF(client, mockDetailData)` unchanged and keep all other pages unchanged.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "Add an Add Client button in the top right area of the Clients page header, next to the page title. It should be a prominent button that navigates to the Add Client form page."
+          "The generateClientPDF function that builds the HTML content should remain unchanged. In ClientDetailPage.tsx, pass the filename string (built from client firstName, lastName, accountId and today's date) to downloadPDF. Keep all other pages unchanged."
         ]
       },
       "acceptanceCriteria": [
-        "The Clients page header shows the \"Clients\" title with an \"Add Client\" button on the same row, aligned to the right.",
-        "Clicking the \"Add Client\" button navigates to \"/add-client\" and renders the Add New Client form.",
-        "All user-facing text is in English and the button label is exactly \"Add Client\"."
-      ]
-    },
-    {
-      "id": "REQ-27",
-      "text": "Populate the Clients table with 5 realistic Swiss-oriented mock client rows when the backend returns an empty client list, using these names: Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin; each mock row must include realistic status, risk level, nationality, and onboarding date values so the table does not appear empty.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Also add 5 realistic mock client rows to the clients table so it does not show empty. Use Swiss names like Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin with realistic status, risk level, nationality, and onboarding dates."
-        ]
-      },
-      "acceptanceCriteria": [
-        "If the backend client list is empty (and not loading), the Clients table renders exactly 5 mock rows using the specified names.",
-        "Each mock row displays non-empty values for Status, Risk Level, Nationality, Relationship Manager, and Onboarding Date columns.",
-        "If the backend returns one or more clients, the real backend data is shown (mock rows are not shown)."
+        "`ClientDetailPage.tsx` continues to generate HTML via `generateClientPDF(client, mockDetailData)` without modifying `generateClientPDF`.",
+        "Export PDF calls `downloadPDF(pdfHtml, filename)` where `filename` is derived from `firstName`, `lastName`, `accountId`, and today’s date (using existing filename-sanitization/date helpers where applicable).",
+        "No other routes/pages/components are modified as part of this change."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under frontend/src/components/ui (read-only UI component sources must be composed, not edited).",
-    "Keep all user-facing text in English.",
-    "Do not introduce additional backend services or external databases; keep changes within the existing React + Motoko application structure."
+    "Do not modify `frontend/src/utils/clientPdfExport.ts` (`generateClientPDF`) output or behavior.",
+    "Keep all other pages and features unchanged outside of `frontend/src/utils/pdfDownload.ts` and `frontend/src/pages/ClientDetailPage.tsx`.",
+    "User-facing text introduced or changed by this work must be in English.",
+    "Do not edit files under `frontend/src/components/ui` or any frontend immutable paths per SYSTEM_CONTEXT."
   ],
   "nonGoals": [
-    "Do not change the backend client schema or add new backend endpoints for mock data.",
-    "Do not redesign the overall UI theme beyond what is necessary to fix the overlap and add the requested button.",
-    "Do not add new routes beyond using the existing \"/add-client\" route."
+    "Implementing a jsPDF-based or iframe-based PDF export flow.",
+    "Changing the PDF HTML layout/content generated by `generateClientPDF`.",
+    "Adding new pages, routes, or backend changes."
   ],
   "imageRequirements": {
     "required": [],

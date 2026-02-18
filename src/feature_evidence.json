@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-layout-so-the-clients-page-main-content-page-title-and-search-bar-is-not-overlapped-cut-off-by-the-left-sidebar-ensure-the-main-content-starts-after-the-220px-sidebar-by-applying-a-correct-left-inset-margin-or-padding-at-the-application-layout-level",
-      "featureTitle": "Fix the layout so the Clients page main content (page title and search bar) is not overlapped/cut off by the left sidebar; ensure the main content starts after the ~220px sidebar by applying a correct left inset (margin or padding) at the application layout level.",
+      "featureId": "feature-rework-frontend-src-utils-pdfdownload-ts-so-downloadpdf-htmlcontent-filename-no-longer-uses-jspdf-html2canvas-including-any-dynamic-cdn-loading-and-instead-exports-via-a-simple-popup-window-print-flow-1-window-open-a-new-blank-popup-window-2-write-the-full-htmlcontent-into-the-popup-via-popupwindow-document-write-htmlcontent-3-set-popupwindow-document-title-to-the-provided-filename-example-hans-mueller-fes-2024-0001-2026-02-18-4-call-popupwindow-print-and-5-close-the-popup-after-printing",
+      "featureTitle": "Rework `frontend/src/utils/pdfDownload.ts` so `downloadPDF(htmlContent, filename)` no longer uses jsPDF/html2canvas (including any dynamic CDN loading), and instead exports via a simple popup-window print flow: (1) `window.open` a new blank popup window, (2) write the full `htmlContent` into the popup via `popupWindow.document.write(htmlContent)`, (3) set `popupWindow.document.title` to the provided `filename` (example: \"Hans_Mueller_FES-2024-0001_2026-02-18\"), (4) call `popupWindow.print()`, and (5) close the popup after printing.",
       "files": [
-        "frontend/src/components/AppLayout.tsx"
+        "frontend/src/utils/pdfDownload.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -16,15 +16,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-25"
+        "REQ-49"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-prominent-add-client-button-in-the-clients-page-header-area-aligned-to-the-top-right-next-to-the-clients-title-that-navigates-to-the-add-client-form-route-at-add-client",
-      "featureTitle": "Add a prominent \"Add Client\" button in the Clients page header area, aligned to the top-right next to the \"Clients\" title, that navigates to the Add Client form route at \"/add-client\".",
+      "featureId": "feature-update-frontend-src-pages-clientdetailpage-tsx-so-the-export-pdf-action-builds-a-filename-string-from-the-client-s-firstname-lastname-accountid-and-today-s-date-and-passes-that-filename-string-to-downloadpdf-pdfhtml-filename-keep-generateclientpdf-client-mockdetaildata-unchanged-and-keep-all-other-pages-unchanged",
+      "featureTitle": "Update `frontend/src/pages/ClientDetailPage.tsx` so the Export PDF action builds a filename string from the client’s `firstName`, `lastName`, `accountId`, and today’s date, and passes that filename string to `downloadPDF(pdfHtml, filename)`. Keep `generateClientPDF(client, mockDetailData)` unchanged and keep all other pages unchanged.",
       "files": [
-        "frontend/src/pages/ClientsPage.tsx"
+        "frontend/src/pages/ClientDetailPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -35,27 +35,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-26"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-populate-the-clients-table-with-5-realistic-swiss-oriented-mock-client-rows-when-the-backend-returns-an-empty-client-list-using-these-names-hans-mueller-sophie-dubois-marco-rossi-elena-fischer-philippe-bonvin-each-mock-row-must-include-realistic-status-risk-level-nationality-and-onboarding-date-values-so-the-table-does-not-appear-empty",
-      "featureTitle": "Populate the Clients table with 5 realistic Swiss-oriented mock client rows when the backend returns an empty client list, using these names: Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin; each mock row must include realistic status, risk level, nationality, and onboarding date values so the table does not appear empty.",
-      "files": [
-        "frontend/src/mocks/clientsListMock.ts",
-        "frontend/src/pages/ClientsPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-27"
+        "REQ-50"
       ],
       "confidence": "high"
     }
