@@ -1,2 +1,3 @@
-# fe-swiss-financial
-Exported from Caffeine project: FE Swiss Financial
+## 
+
+To run app build and run docker image: `docker build -t app . docker run -it --network host app`

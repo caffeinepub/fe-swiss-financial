@@ -1,0 +1,63 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-fix-the-layout-so-the-clients-page-main-content-page-title-and-search-bar-is-not-overlapped-cut-off-by-the-left-sidebar-ensure-the-main-content-starts-after-the-220px-sidebar-by-applying-a-correct-left-inset-margin-or-padding-at-the-application-layout-level",
+      "featureTitle": "Fix the layout so the Clients page main content (page title and search bar) is not overlapped/cut off by the left sidebar; ensure the main content starts after the ~220px sidebar by applying a correct left inset (margin or padding) at the application layout level.",
+      "files": [
+        "frontend/src/components/AppLayout.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-25"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-prominent-add-client-button-in-the-clients-page-header-area-aligned-to-the-top-right-next-to-the-clients-title-that-navigates-to-the-add-client-form-route-at-add-client",
+      "featureTitle": "Add a prominent \"Add Client\" button in the Clients page header area, aligned to the top-right next to the \"Clients\" title, that navigates to the Add Client form route at \"/add-client\".",
+      "files": [
+        "frontend/src/pages/ClientsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-26"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-populate-the-clients-table-with-5-realistic-swiss-oriented-mock-client-rows-when-the-backend-returns-an-empty-client-list-using-these-names-hans-mueller-sophie-dubois-marco-rossi-elena-fischer-philippe-bonvin-each-mock-row-must-include-realistic-status-risk-level-nationality-and-onboarding-date-values-so-the-table-does-not-appear-empty",
+      "featureTitle": "Populate the Clients table with 5 realistic Swiss-oriented mock client rows when the backend returns an empty client list, using these names: Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin; each mock row must include realistic status, risk level, nationality, and onboarding date values so the table does not appear empty.",
+      "files": [
+        "frontend/src/mocks/clientsListMock.ts",
+        "frontend/src/pages/ClientsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-27"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

@@ -1,0 +1,334 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 15,
+  "summary": "Build a CRM application for a Swiss financial advisory firm (FE Swiss Financial) with a Swiss-style minimalist UI, including a rebuilt sidebar navigation (Dashboard, Clients, Onboarding, KYC Screening, Reports, Settings), dashboard analytics, client list management (with Add New Client CTA on Clients page), detailed client profiles, onboarding kanban pipeline, KYC screening management with manual check entry, and compliance reporting views.",
+  "architectural_notes": [
+    "Add role/permission concept (at minimum: admin) and an initialization/bootstrap rule to assign admin to the first created record.",
+    "Update IA/navigation: sidebar contains Dashboard, Clients, Onboarding, KYC Screening, Reports, Settings (Settings pinned near bottom before user profile); 'Add New Client' is a primary CTA on Clients page, not a sidebar item.",
+    "Sidebar nav grouping: Dashboard/Clients/Onboarding/KYC Screening/Reports, then a separator, then Settings pinned just above the user profile/logout section; ensure main content layout accounts for sidebar width (no overlap).",
+    "Client Detail page redesign: include a top alert bar for compliance warnings, a profile header with client ID format like HEL-2026-0001 and Edit/Download PDF actions, and a tabbed layout (Overview default + Identity & KYC, Documents, Financial Profile, Connections, Activity Log, Notes).",
+    "Identity & KYC tab UI spec: Identity Documents displayed as cards; expiry countdown color thresholds (green >90d, orange 30–90d, red <30d/expired) + verified badge/date; KYC Screening History rendered as a table; Current Risk Assessment card includes Initiate New Screening CTA; populate with Swiss-oriented mock data (e.g., Swiss passport, B permit).",
+    "Clients page layout: main content must be offset to the right of the ~220px sidebar so page title and search UI never overlap/cut off.",
+    "Clients page header should include a prominent \"Add Client\" CTA aligned top-right next to the page title, navigating to the Add Client form route.",
+    "Clients table should render 5 realistic Swiss mock client rows when backend data is unavailable to avoid empty-state table (names, status, risk, nationality, onboarding dates)."
+  ],
+  "known_issues": [
+    "Sidebar overlaps main content; main content area needs proper left margin/padding to account for sidebar width.",
+    "Clients page content is still partially hidden under the left sidebar (insufficient left margin/padding)."
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-create-the-frontend-application-layout-with-a-clean-professional-swiss-style-minimalist-aesthetic-and-a-persistent-sidebar-navigation-that-links-to-dashboard-clients-and-add-new-client",
+      "title": "Create the frontend application layout with a clean, professional Swiss-style minimalist aesthetic and a persistent sidebar navigation that links to Dashboard, Clients, and Add New Client.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-dashboard-page-that-displays-total-clients-clients-by-status-clients-by-risk-level-and-a-list-of-upcoming-kyc-review-deadlines-populated-from-the-backend",
+      "title": "Build a Dashboard page that displays: total clients, clients by status, clients by risk level, and a list of upcoming KYC review deadlines populated from the backend.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-clients-page-with-a-searchable-sortable-table-showing-client-name-status-risk-level-nationality-relationship-manager-and-onboarding-date-populated-from-the-backend",
+      "title": "Build a Clients page with a searchable, sortable table showing: client name, status, risk level, nationality, relationship manager, and onboarding date, populated from the backend.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-client-detail-page-that-shows-full-profile-information-personal-details-name-dob-nationality-address-phone-email-kyc-status-with-history-of-checks-risk-rating-with-justification-onboarding-progress-steps-and-an-activity-log-all-populated-from-the-backend-for-the-selected-client",
+      "title": "Build a Client Detail page that shows full profile information: personal details (name, DOB, nationality, address, phone, email), KYC status with history of checks, risk rating with justification, onboarding progress steps, and an activity log; all populated from the backend for the selected client.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-an-add-new-client-form-that-captures-all-personal-details-plus-client-type-individual-entity-and-creates-the-new-client-in-the-backend-after-creation-navigate-to-the-new-client-s-detail-page-or-clients-list-with-a-visible-confirmation",
+      "title": "Build an Add New Client form that captures all personal details plus client type (individual/entity), and creates the new client in the backend; after creation, navigate to the new client’s detail page (or Clients list) with a visible confirmation.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-onboarding-page-that-renders-a-kanban-style-pipeline-with-exactly-these-columns-in-this-order-initial-contact-id-collection-kyc-screening-risk-assessment-compliance-review-account-activation",
+      "title": "Add an \"Onboarding\" page that renders a kanban-style pipeline with exactly these columns in this order: Initial Contact, ID Collection, KYC Screening, Risk Assessment, Compliance Review, Account Activation.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-for-each-client-in-the-onboarding-pipeline-display-a-kanban-card-that-shows-client-name-step-status-assigned-person-and-due-date",
+      "title": "For each client in the onboarding pipeline, display a kanban card that shows: client name, step status, assigned person, and due date.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-allow-users-to-move-clients-between-onboarding-stages-from-the-onboarding-kanban-ui-and-persist-the-updated-stage-and-any-edited-card-fields-if-applicable-to-the-backend",
+      "title": "Allow users to move clients between onboarding stages from the Onboarding kanban UI and persist the updated stage (and any edited card fields, if applicable) to the backend.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-sidebar-navigation-in-frontend-src-components-applayout-tsx-to-add-three-items-after-onboarding-1-kyc-screening-with-a-shieldcheck-icon-linking-to-kyc-screening-2-reports-with-a-filebarchart-icon-linking-to-reports-then-render-a-visible-separator-line-then-3-settings-with-a-settings-gear-icon-linking-to-settings-positioned-just-above-the-user-profile-logout-section",
+      "title": "Update the sidebar navigation in `frontend/src/components/AppLayout.tsx` to add three items after “Onboarding”: (1) “KYC Screening” with a ShieldCheck icon linking to `/kyc-screening`, (2) “Reports” with a FileBarChart icon linking to `/reports`, then render a visible separator line, then (3) “Settings” with a Settings (gear) icon linking to `/settings`, positioned just above the user profile/logout section.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-application-layout-so-the-sidebar-does-not-overlap-the-main-content-ensure-the-main-content-area-has-the-correct-left-inset-margin-padding-to-account-for-the-sidebar-width-across-supported-breakpoints",
+      "title": "Fix the application layout so the sidebar does not overlap the main content; ensure the main content area has the correct left inset/margin/padding to account for the sidebar width across supported breakpoints.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-frontend-routes-for-kyc-screening-reports-and-settings-in-frontend-src-app-tsx-so-the-new-sidebar-links-resolve-without-navigation-errors-each-route-should-render-a-minimal-placeholder-page-with-a-clear-english-heading-matching-the-nav-label",
+      "title": "Add frontend routes for `/kyc-screening`, `/reports`, and `/settings` in `frontend/src/App.tsx` so the new sidebar links resolve without navigation errors; each route should render a minimal placeholder page with a clear English heading matching the nav label.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-rebuild-the-clients-clientid-client-detail-page-ui-frontend-src-pages-clientdetailpage-tsx-to-match-the-requested-structure-1-a-top-alert-bar-with-colored-pill-badges-for-warnings-2-a-profile-header-showing-client-full-name-formatted-client-id-hel-yyyy-nnnn-status-badge-risk-level-badge-and-action-buttons-for-edit-and-download-pdf-and-3-a-horizontal-tab-bar-with-tabs-overview-default-identity-kyc-documents-financial-profile-connections-activity-log-notes",
+      "title": "Rebuild the `/clients/$clientId` Client Detail page UI (`frontend/src/pages/ClientDetailPage.tsx`) to match the requested structure: (1) a top alert bar with colored pill badges for warnings, (2) a profile header showing client full name, formatted client ID `HEL-YYYY-NNNN`, status badge, risk level badge, and action buttons for “Edit” and “Download PDF”, and (3) a horizontal tab bar with tabs: Overview (default), Identity & KYC, Documents, Financial Profile, Connections, Activity Log, Notes.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-overview-tab-content-as-a-responsive-2-column-grid-of-6-card-sections-personal-information-contact-details-identity-documents-kyc-status-tax-information-financial-profile-each-section-must-list-the-requested-fields-and-display-a-small-grey-verified-yyyy-mm-dd-text-next-to-each-field-value",
+      "title": "Implement the Overview tab content as a responsive 2-column grid of 6 card sections: Personal Information, Contact Details, Identity Documents, KYC Status, Tax Information, Financial Profile. Each section must list the requested fields and display a small grey “Verified: YYYY-MM-DD” text next to each field value.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-use-realistic-placeholder-mock-data-to-populate-the-new-sections-especially-the-overview-content-alert-badges-identity-documents-and-verified-dates-so-the-redesigned-client-detail-page-looks-complete-even-if-the-backend-client-model-does-not-yet-provide-these-fields-continue-to-use-the-existing-backend-query-usegetclient-for-the-core-client-record-used-in-the-header-name-status-risk-where-available",
+      "title": "Use realistic placeholder/mock data to populate the new sections (especially the Overview content, alert badges, identity documents, and verified dates) so the redesigned Client Detail page looks complete even if the backend client model does not yet provide these fields; continue to use the existing backend query (`useGetClient`) for the core client record used in the header (name/status/risk) where available.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-placeholder-content-for-the-identity-kyc-tab-in-frontend-src-pages-clientdetailpage-tsx-with-real-ui-sections-populated-from-the-existing-mockdata-returned-by-generatemockclientdetail",
+      "title": "Replace the placeholder content for the “Identity & KYC” tab in `frontend/src/pages/ClientDetailPage.tsx` with real UI sections populated from the existing `mockData` returned by `generateMockClientDetail`.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-identity-documents-section-in-the-identity-kyc-tab-as-a-card-section-with-an-add-document-button-and-a-list-grid-of-document-cards-each-document-card-must-display-document-type-passport-id-card-residence-permit-document-number-issuing-country-issue-date-expiry-date-a-color-coded-expiry-countdown-and-a-verified-badge-with-a-verified-date",
+      "title": "Implement the “Identity Documents” section in the Identity & KYC tab as a card section with an “Add Document” button and a list/grid of document cards; each document card must display: document type (Passport/ID Card/Residence Permit), document number, issuing country, issue date, expiry date, a color-coded expiry countdown, and a verified badge with a verified date.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-kyc-screening-history-section-in-the-identity-kyc-tab-as-a-table-listing-all-past-screenings-with-columns-date-screening-type-initial-periodic-event-triggered-risk-level-result-pep-check-result-clear-match-sanctions-check-result-clear-hit-screened-by-user-name-and-notes",
+      "title": "Implement the “KYC Screening History” section in the Identity & KYC tab as a table listing all past screenings with columns: Date, Screening Type (Initial/Periodic/Event-triggered), Risk Level Result, PEP Check Result (Clear/Match), Sanctions Check Result (Clear/Hit), Screened By (user name), and Notes.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-current-risk-assessment-section-in-the-identity-kyc-tab-as-a-card-showing-overall-risk-level-with-a-colored-badge-a-list-of-risk-factors-last-assessment-date-next-review-date-and-a-button-labeled-initiate-new-screening",
+      "title": "Implement the “Current Risk Assessment” section in the Identity & KYC tab as a card showing: overall risk level with a colored badge, a list of risk factors, last assessment date, next review date, and a button labeled “Initiate New Screening”.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-frontend-src-mocks-clientdetailmock-ts-mock-data-mockclientdetail-generatemockclientdetail-to-include-the-additional-fields-needed-for-the-identity-kyc-tab-issuing-country-verified-date-per-document-screening-history-rows-and-current-risk-assessment-details-using-realistic-swiss-oriented-mock-values-e-g-swiss-passport-swiss-permit-b-switzerland-issuing-country-swiss-style-names",
+      "title": "Extend `frontend/src/mocks/clientDetailMock.ts` mock data (`MockClientDetail` + `generateMockClientDetail`) to include the additional fields needed for the Identity & KYC tab (issuing country, verified date per document, screening history rows, and current risk assessment details), using realistic Swiss-oriented mock values (e.g., Swiss passport, Swiss Permit B, Switzerland issuing country, Swiss-style names).",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-or-add-a-date-expiry-helper-in-frontend-src-utils-format-ts-or-a-new-helper-function-in-the-same-file-to-support-the-identity-documents-expiry-countdown-thresholds-required-by-the-identity-kyc-tab-green-90-days-orange-30-90-days-red-30-days-or-expired",
+      "title": "Update or add a date/expiry helper in `frontend/src/utils/format.ts` (or a new helper function in the same file) to support the Identity Documents expiry countdown thresholds required by the Identity & KYC tab: green > 90 days, orange 30–90 days, red < 30 days or expired.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-layout-so-the-clients-page-main-content-page-title-and-search-bar-is-not-overlapped-cut-off-by-the-left-sidebar-ensure-the-main-content-starts-after-the-220px-sidebar-by-applying-a-correct-left-inset-margin-or-padding-at-the-application-layout-level",
+      "title": "Fix the layout so the Clients page main content (page title and search bar) is not overlapped/cut off by the left sidebar; ensure the main content starts after the ~220px sidebar by applying a correct left inset (margin or padding) at the application layout level.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-prominent-add-client-button-in-the-clients-page-header-area-aligned-to-the-top-right-next-to-the-clients-title-that-navigates-to-the-add-client-form-route-at-add-client",
+      "title": "Add a prominent \"Add Client\" button in the Clients page header area, aligned to the top-right next to the \"Clients\" title, that navigates to the Add Client form route at \"/add-client\".",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-populate-the-clients-table-with-5-realistic-swiss-oriented-mock-client-rows-when-the-backend-returns-an-empty-client-list-using-these-names-hans-mueller-sophie-dubois-marco-rossi-elena-fischer-philippe-bonvin-each-mock-row-must-include-realistic-status-risk-level-nationality-and-onboarding-date-values-so-the-table-does-not-appear-empty",
+      "title": "Populate the Clients table with 5 realistic Swiss-oriented mock client rows when the backend returns an empty client list, using these names: Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin; each mock row must include realistic status, risk level, nationality, and onboarding date values so the table does not appear empty.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Dashboard showing client statistics (total clients; clients by status: prospect/onboarding/active/offboarded; clients by risk level: low/medium/high) and upcoming KYC review deadlines list",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Clients page with searchable, sortable table (client name, status, risk level, nationality, relationship manager, onboarding date)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Client detail page with full profile: personal details, KYC status with history, risk rating with justification, onboarding progress steps, and activity log",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Add New Client form capturing personal details plus client type (individual/entity)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Clean, professional Swiss-style minimalist aesthetic with sidebar navigation",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Implement a Motoko backend data model and CRUD APIs for CRM clients, including: client profile (personal details + client type individual/entity), client status (prospect/onboarding/active/offboarded), risk level (low/medium/high) with justification, relationship manager, onboarding date, KYC review due date, KYC check history entries, onboarding progress steps, and an activity log.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Implement backend dashboard query APIs that return: total client count, counts by client status (prospect/onboarding/active/offboarded), counts by risk level (low/medium/high), and a list of upcoming KYC review deadlines sorted by soonest due date.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Make the first created client/user an admin (bootstrap initial admin role for the CRM)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Implement an admin bootstrap flow in the Motoko backend so that the first user to set up a profile becomes an admin automatically, enabling them to create/manage clients without manual role assignment.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Rebuild left sidebar navigation with items in exact order and appropriate icons: Dashboard, Clients, Onboarding, KYC Screening, Reports, Settings (Settings placed at bottom before user profile)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Move 'Add New Client' entry out of sidebar; add prominent 'Add New Client' button at top of Clients page",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Onboarding page: kanban-style pipeline view with steps (Initial Contact, ID Collection, KYC Screening, Risk Assessment, Compliance Review, Account Activation); cards show client name, step status, assigned person, and due date",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "KYC Screening page: list clients with last screening date, next review date, PEP status, sanctions status, and risk rating; per-client 'Run Manual Check' button opens form to enter screening results (document type/number, issue/expiry dates, PEP yes/no, sanctions clear/hit, notes)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Reports page: generate/view on-screen compliance reports (client risk distribution, overdue KYC reviews, onboarding status summary, full client compliance report)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Persist onboarding pipeline data in the backend so the Onboarding page can be populated from the canister, including each client’s current onboarding stage (one of the 6 stages), step status, assigned person, and due date.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Fix sidebar layout so it does not overlap main content (ensure main content has proper left margin) and add a separator line between primary nav items (after Reports) and Settings section.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Rebuild Client Detail page UI: top alert bar with warning pill badges; profile header with client name, formatted client ID (HEL-2026-0001), status/risk badges, Edit + Download PDF actions; tabbed sections (Overview default, Identity & KYC, Documents, Financial Profile, Connections, Activity Log, Notes); Overview shows 2-column card grid with realistic placeholder data and per-field 'Verified: YYYY-MM-DD' text, including identity document expiry countdown styling",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Build Client Detail 'Identity & KYC' tab content: Identity Documents cards (type/number/country/issue/expiry with green>90d orange 30-90d red<30d or expired + verified badge/date + Add Document), KYC Screening History table (date, type, risk result, PEP result, sanctions result, screened by, notes), and Current Risk Assessment card (risk badge, risk factors, last assessment, next review, Initiate New Screening) using Swiss-oriented mock data",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Clients page: ensure main content is not cut off by the ~220px sidebar (proper left margin/padding); add prominent \"Add Client\" button in top-right of header next to title linking to Add Client form; populate table with 5 realistic Swiss mock clients (Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin) including status, risk level, nationality, onboarding date",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "FE Swiss Financial",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

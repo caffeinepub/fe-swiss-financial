@@ -1,0 +1,60 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Clients page: fix sidebar overlap, add Add Client CTA, and seed mock rows",
+  "requirements": [
+    {
+      "id": "REQ-25",
+      "summary": "Apply a shared layout-level left inset so main content is not overlapped by the ~220px left sidebar.",
+      "acceptanceCriteria": [
+        "When viewing /clients, the page title and the search input are fully visible and not hidden behind the sidebar.",
+        "The main content area has a consistent left inset that accounts for an approximately 220px-wide sidebar on desktop-sized viewports.",
+        "The fix is applied in a shared layout/container (not only by hardcoding spacing in one specific page) so other pages do not regress."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AppLayout.tsx",
+          "operation": "modify",
+          "description": "Update the shared application layout so the content container (SidebarInset and/or its main/footer regions) applies a consistent desktop left inset (e.g., margin-left) that accounts for the ~220px sidebar width, preventing any page content (including /clients title/search) from rendering beneath the sidebar."
+        }
+      ]
+    },
+    {
+      "id": "REQ-26",
+      "summary": "Add an \"Add Client\" CTA button in the Clients page header that navigates to /add-client.",
+      "acceptanceCriteria": [
+        "The Clients page header shows the \"Clients\" title with an \"Add Client\" button on the same row, aligned to the right.",
+        "Clicking the \"Add Client\" button navigates to \"/add-client\" and renders the Add New Client form.",
+        "All user-facing text is in English and the button label is exactly \"Add Client\"."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ClientsPage.tsx",
+          "operation": "modify",
+          "description": "Add a prominent shadcn/ui Button labeled \"Add Client\" in the header row, aligned to the top-right next to the \"Clients\" title, and wire it to navigate({ to: '/add-client' }). Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-27",
+      "summary": "Render 5 Swiss-oriented mock client rows when the backend client list is empty (and not loading).",
+      "acceptanceCriteria": [
+        "If the backend client list is empty (and not loading), the Clients table renders exactly 5 mock rows using the specified names.",
+        "Each mock row displays non-empty values for Status, Risk Level, Nationality, Relationship Manager, and Onboarding Date columns.",
+        "If the backend returns one or more clients, the real backend data is shown (mock rows are not shown)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/mocks/clientsListMock.ts",
+          "operation": "create",
+          "description": "Add a dedicated mock data module exporting exactly 5 realistic Swiss-oriented client rows using the required names (Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin) with non-empty Status, Risk Level, Nationality, Relationship Manager display, and Onboarding Date values suitable for the Clients table."
+        },
+        {
+          "path": "frontend/src/pages/ClientsPage.tsx",
+          "operation": "modify",
+          "description": "When the backend client list has loaded and is empty, display the 5 mock rows from the new mock module instead of the empty-state row; when real clients exist, keep showing backend data only. Ensure mock rows provide values for Status, Risk Level, Nationality, Relationship Manager, and Onboarding Date and do not appear during loading."
+        }
+      ]
+    }
+  ]
+}

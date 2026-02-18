@@ -1,0 +1,86 @@
+{
+  "kind": "build_request",
+  "title": "Fix Clients page sidebar overlap, add Add Client CTA, and seed mock client rows",
+  "projectName": "FE Swiss CRM",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-25",
+      "text": "Fix the layout so the Clients page main content (page title and search bar) is not overlapped/cut off by the left sidebar; ensure the main content starts after the ~220px sidebar by applying a correct left inset (margin or padding) at the application layout level.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "The main content area is still being cut off by the sidebar on the left side... The sidebar is about 220px wide so the main content should start after that."
+        ]
+      },
+      "acceptanceCriteria": [
+        "When viewing /clients, the page title and the search input are fully visible and not hidden behind the sidebar.",
+        "The main content area has a consistent left inset that accounts for an approximately 220px-wide sidebar on desktop-sized viewports.",
+        "The fix is applied in a shared layout/container (not only by hardcoding spacing in one specific page) so other pages do not regress."
+      ]
+    },
+    {
+      "id": "REQ-26",
+      "text": "Add a prominent \"Add Client\" button in the Clients page header area, aligned to the top-right next to the \"Clients\" title, that navigates to the Add Client form route at \"/add-client\".",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Add an Add Client button in the top right area of the Clients page header, next to the page title. It should be a prominent button that navigates to the Add Client form page."
+        ]
+      },
+      "acceptanceCriteria": [
+        "The Clients page header shows the \"Clients\" title with an \"Add Client\" button on the same row, aligned to the right.",
+        "Clicking the \"Add Client\" button navigates to \"/add-client\" and renders the Add New Client form.",
+        "All user-facing text is in English and the button label is exactly \"Add Client\"."
+      ]
+    },
+    {
+      "id": "REQ-27",
+      "text": "Populate the Clients table with 5 realistic Swiss-oriented mock client rows when the backend returns an empty client list, using these names: Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin; each mock row must include realistic status, risk level, nationality, and onboarding date values so the table does not appear empty.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Also add 5 realistic mock client rows to the clients table so it does not show empty. Use Swiss names like Hans Mueller, Sophie Dubois, Marco Rossi, Elena Fischer, Philippe Bonvin with realistic status, risk level, nationality, and onboarding dates."
+        ]
+      },
+      "acceptanceCriteria": [
+        "If the backend client list is empty (and not loading), the Clients table renders exactly 5 mock rows using the specified names.",
+        "Each mock row displays non-empty values for Status, Risk Level, Nationality, Relationship Manager, and Onboarding Date columns.",
+        "If the backend returns one or more clients, the real backend data is shown (mock rows are not shown)."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify any files under frontend/src/components/ui (read-only UI component sources must be composed, not edited).",
+    "Keep all user-facing text in English.",
+    "Do not introduce additional backend services or external databases; keep changes within the existing React + Motoko application structure."
+  ],
+  "nonGoals": [
+    "Do not change the backend client schema or add new backend endpoints for mock data.",
+    "Do not redesign the overall UI theme beyond what is necessary to fix the overlap and add the requested button.",
+    "Do not add new routes beyond using the existing \"/add-client\" route."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}
