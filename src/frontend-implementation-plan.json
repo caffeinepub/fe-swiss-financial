@@ -1,39 +1,53 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Revert PDF export to popup-window print flow (no jsPDF)",
+  "title": "Fix Operator detection & Add Staff form gating in Settings > Admin Management",
   "requirements": [
     {
-      "id": "REQ-49",
-      "summary": "Replace jsPDF/html2canvas-based PDF generation with a popup-window print flow in downloadPDF().",
+      "id": "REQ-75",
+      "summary": "Compute isOperator by comparing the logged-in Principal ID against the Operator row Principal ID from the fetched admin entries list (optional fallback to myAdminEntry).",
       "acceptanceCriteria": [
-        "`downloadPDF()` does not load or reference jsPDF or html2canvas and does not use Blob/objectURL download logic.",
-        "Calling `downloadPDF(htmlContent, filename)` opens a new window and writes `htmlContent` into it via `document.write`.",
-        "The popup window’s `document.title` is set exactly to the passed `filename` string before calling `print()`.",
-        "`popupWindow.print()` is invoked and the popup window is closed after the print dialog completes (use an `afterprint`-based mechanism and a safe fallback if needed).",
-        "If the popup cannot be opened (e.g., blocked), `downloadPDF()` fails gracefully with a clear English message (console error is acceptable; a simple user-facing alert is also acceptable)."
+        "When the admin table includes an entry with role Operator whose Principal ID matches the currently logged-in user’s Principal ID, the “Add Staff Member” form is visible.",
+        "When the logged-in user’s Principal ID does not match the Operator row Principal ID, the Add Staff form is not visible and the page shows an Operator-only message.",
+        "The Operator check is based on comparing the current Principal ID to the Operator row Principal ID from the fetched admin list (not on a heuristic or unrelated field)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/pdfDownload.ts",
+          "path": "frontend/src/components/settings/AdminManagementSection.tsx",
           "operation": "modify",
-          "description": "Rework `downloadPDF(htmlContent, filename)` to: open a blank popup via `window.open`, write the full `htmlContent` via `popupWindow.document.write(htmlContent)`, set `popupWindow.document.title = filename`, call `popupWindow.print()`, and close the popup after printing using an `afterprint` listener plus a safe fallback timer. Remove all jsPDF/html2canvas types, dynamic CDN script loading helpers, and any Blob/objectURL download logic. If the popup is blocked/unavailable, fail gracefully with a clear English console error and/or alert."
+          "description": "Fix Operator detection by deriving the current user Principal ID via the existing Internet Identity context (from the authorization system) and comparing it to the Operator entry's Principal ID found in adminEntries returned by useGetAdminEntries(). Allow useGetMyAdminEntry() only as an optional fallback when adminEntries is unavailable. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-50",
-      "summary": "Update ClientDetailPage Export PDF action to build and pass a filename from client name, accountId, and today’s date.",
+      "id": "REQ-76",
+      "summary": "Ensure the Add Staff form renders directly below the admin table with the exact controls/labels and calls the existing add-admin mutation with role Staff.",
       "acceptanceCriteria": [
-        "`ClientDetailPage.tsx` continues to generate HTML via `generateClientPDF(client, mockDetailData)` without modifying `generateClientPDF`.",
-        "Export PDF calls `downloadPDF(pdfHtml, filename)` where `filename` is derived from `firstName`, `lastName`, `accountId`, and today’s date (using existing filename-sanitization/date helpers where applicable).",
-        "No other routes/pages/components are modified as part of this change."
+        "As Operator, the Add Staff form appears below the admin table and contains the three required controls: Principal ID input, Display Name input, and “Add Staff” button.",
+        "Submitting the form with empty Principal ID or Display Name shows an English validation error and does not call the backend.",
+        "Submitting the form with valid values calls the existing add-admin mutation with role Staff and clears the inputs on success."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/ClientDetailPage.tsx",
+          "path": "frontend/src/components/settings/AdminManagementSection.tsx",
           "operation": "modify",
-          "description": "Adjust the Export PDF handler to build `filename` from `client.firstName`, `client.lastName`, `client.accountId` (or existing fallback), and today's date using existing `sanitizeFilename()` and `formatDateForFilename()` helpers, and pass it to `downloadPDF(pdfHtml, filename)`. Keep `generateClientPDF(client, mockDetailData)` unchanged and do not modify any other pages."
+          "description": "Confirm the Add Staff form is placed immediately below the admin entries table and contains exactly: (1) Principal ID text input, (2) Display Name text input, (3) “Add Staff” button with English labels and validation messaging; ensure submit calls the existing React Query mutation (useAddAdmin) with role AdminRole.staff and clears inputs on success."
+        }
+      ]
+    },
+    {
+      "id": "REQ-77",
+      "summary": "Refresh the admin entries list after Add Staff success and enforce Remove button visibility rules based on Operator status and row role.",
+      "acceptanceCriteria": [
+        "After adding a Staff entry, the admin entries table updates to include the new row without requiring a manual page refresh.",
+        "When the logged-in user is the Operator, each Staff row shows a Remove button and the Operator row shows no Remove button.",
+        "When the logged-in user is not the Operator, the Remove column/buttons are not shown."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/settings/AdminManagementSection.tsx",
+          "operation": "modify",
+          "description": "Wire Remove-column visibility and per-row Remove button rendering to the corrected isOperator calculation; ensure the Operator row never shows Remove. Ensure the post-add flow results in the admin entries list refreshing so the new Staff row appears (leveraging the existing React Query invalidation already triggered by the mutation)."
         }
       ]
     }

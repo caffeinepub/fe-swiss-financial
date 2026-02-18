@@ -1,3 +1,5 @@
+import AdminManagementSection from '../components/settings/AdminManagementSection';
+
 export default function SettingsPage() {
   return (
     <div className="space-y-6">
@@ -7,6 +9,7 @@ export default function SettingsPage() {
           Configure application preferences and system settings.
         </p>
       </div>
+      <AdminManagementSection />
     </div>
   );
 }

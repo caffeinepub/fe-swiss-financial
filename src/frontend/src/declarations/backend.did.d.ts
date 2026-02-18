@@ -17,6 +17,21 @@ export interface ActivityLogEntry {
   'timestamp' : Time,
   'fieldName' : string,
 }
+export interface AdminEntry {
+  'principal' : Principal,
+  'name' : string,
+  'role' : AdminRole,
+  'addedOn' : Time,
+}
+export type AdminRole = { 'operator' : null } |
+  { 'staff' : null };
+export interface AuthorizationResult {
+  'status' : AuthorizationStatus,
+  'message' : string,
+}
+export type AuthorizationStatus = { 'authorized' : null } |
+  { 'operatorMissing' : null } |
+  { 'unauthorized' : null };
 export interface ClientProfile {
   'id' : bigint,
   'tin' : string,
@@ -111,6 +126,7 @@ export type UserRole = { 'admin' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addAdmin' : ActorMethod<[Principal, string, AdminRole], boolean>,
   'appendActivityLogEntries' : ActorMethod<
     [bigint, Array<ActivityLogEntry>],
     undefined
@@ -118,7 +134,11 @@ export interface _SERVICE {
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createClient' : ActorMethod<[ClientProfile], bigint>,
   'deleteClient' : ActorMethod<[bigint], undefined>,
+  'getAdminEntries' : ActorMethod<[], Array<AdminEntry>>,
+  'getAdminEntry' : ActorMethod<[Principal], AdminEntry>,
   'getAllClients' : ActorMethod<[], Array<ClientProfile>>,
+  'getAllowlistSize' : ActorMethod<[], bigint>,
+  'getCallerAdminEntry' : ActorMethod<[], [] | [AdminEntry]>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getClient' : ActorMethod<[bigint], ClientProfile>,
@@ -126,11 +146,13 @@ export interface _SERVICE {
   'getDashboardStats' : ActorMethod<[], DashboardStats>,
   'getOnboardingPipeline' : ActorMethod<[], Array<OnboardingStage>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'isAuthorized' : ActorMethod<[], AuthorizationResult>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'moveClientToStage' : ActorMethod<
     [bigint, bigint, string, string, [] | [Time]],
     undefined
   >,
+  'removeAdmin' : ActorMethod<[Principal], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'updateClient' : ActorMethod<[bigint, ClientProfile], undefined>,
   'updateClientOverviewFields' : ActorMethod<

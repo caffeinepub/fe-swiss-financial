@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { LayoutDashboard, Users, Workflow, ShieldCheck, FileBarChart, Settings, LogOut } from 'lucide-react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile } from '../hooks/useQueries';
+import { useGetCallerUserProfile, useGetMyAdminEntry } from '../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Sidebar,
@@ -18,6 +18,8 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { AdminRole } from '../backend';
 
 export default function AppLayout() {
   const navigate = useNavigate();
@@ -25,6 +27,7 @@ export default function AppLayout() {
   const { clear } = useInternetIdentity();
   const queryClient = useQueryClient();
   const { data: userProfile } = useGetCallerUserProfile();
+  const { data: adminEntry } = useGetMyAdminEntry();
 
   const currentPath = routerState.location.pathname;
 
@@ -44,6 +47,10 @@ export default function AppLayout() {
   const settingsNavItems = [
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
+
+  const displayName = adminEntry?.name || userProfile?.name || 'User';
+  const displayRole = adminEntry?.role === AdminRole.operator ? 'Operator' : 'Staff';
+  const displayEmail = userProfile?.email;
 
   return (
     <SidebarProvider>
@@ -95,10 +102,17 @@ export default function AppLayout() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter className="border-t border-border p-4">
-          {userProfile && (
+          {adminEntry && (
             <div className="mb-3 px-2">
-              <p className="text-sm font-medium text-foreground">{userProfile.name}</p>
-              <p className="text-xs text-muted-foreground">{userProfile.email}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-foreground">{displayName}</p>
+                <Badge variant={adminEntry.role === AdminRole.operator ? 'default' : 'secondary'} className="text-xs">
+                  {displayRole}
+                </Badge>
+              </div>
+              {displayEmail && (
+                <p className="mt-1 text-xs text-muted-foreground">{displayEmail}</p>
+              )}
             </div>
           )}
           <Button

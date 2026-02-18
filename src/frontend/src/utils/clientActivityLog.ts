@@ -5,6 +5,14 @@ import type { ActivityLogEntry } from '../backend';
 
 const STORAGE_KEY_PREFIX = 'client_activity_log_';
 
+export interface LocalActivityLogEntry {
+  timestamp: number; // milliseconds
+  user: string; // "Name (email)"
+  action: 'Created' | 'Updated' | 'Exported PDF';
+  details: string;
+  ip: string;
+}
+
 export function loadClientActivityLog(clientId: string): string[] {
   try {
     const key = `${STORAGE_KEY_PREFIX}${clientId}`;
@@ -21,7 +29,7 @@ export function appendClientActivityLog(clientId: string, entries: ActivityLogEn
     const key = `${STORAGE_KEY_PREFIX}${clientId}`;
     const existing = loadClientActivityLog(clientId);
     
-    // Format entries to match backend format
+    // Format entries to match backend format (for backward compatibility)
     const formattedEntries = entries.map((entry) => {
       const timestamp = entry.timestamp.toString();
       return `${timestamp} | ${entry.fieldName} | Old: ${entry.oldValue} | New: ${entry.newValue} | User: ${entry.user}`;
@@ -31,6 +39,21 @@ export function appendClientActivityLog(clientId: string, entries: ActivityLogEn
     localStorage.setItem(key, JSON.stringify(updated));
   } catch (error) {
     console.error('Failed to append to client activity log:', error);
+  }
+}
+
+export function appendLocalActivityLog(clientId: string, entries: LocalActivityLogEntry[]): void {
+  try {
+    const key = `${STORAGE_KEY_PREFIX}${clientId}`;
+    const existing = loadClientActivityLog(clientId);
+    
+    // Format entries as JSON strings
+    const formattedEntries = entries.map((entry) => JSON.stringify(entry));
+    
+    const updated = [...existing, ...formattedEntries];
+    localStorage.setItem(key, JSON.stringify(updated));
+  } catch (error) {
+    console.error('Failed to append to local activity log:', error);
   }
 }
 

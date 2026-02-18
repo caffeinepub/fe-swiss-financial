@@ -1,16 +1,13 @@
-import Array "mo:core/Array";
 import List "mo:core/List";
 import Map "mo:core/Map";
-
 import Nat "mo:core/Nat";
-import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
-
-
+import Principal "mo:core/Principal";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+
 
 
 actor {
@@ -135,11 +132,34 @@ actor {
     tin : ?Text;
   };
 
+  public type AdminRole = { #operator; #staff };
+  public type AdminEntry = {
+    principal : Principal;
+    name : Text;
+    role : AdminRole;
+    addedOn : Time.Time;
+  };
+
+  public type AuthorizationStatus = { #authorized; #unauthorized; #operatorMissing };
+  public type AuthorizationResult = {
+    status : AuthorizationStatus;
+    message : Text;
+  };
+
+  public type OperatorStatus = {
+    #operatorOnly;
+    #staffOnly;
+    #operatorAndStaff;
+    #none;
+  };
+
   // Storage
   let clients = Map.empty<Nat, ClientProfile>();
   var nextClientId = 1;
   let userProfiles = Map.empty<Principal, UserProfile>();
   var adminCreated = false;
+  let adminAllowlist = Map.empty<Principal, AdminEntry>();
+  var canisterDeployer : ?Principal = null;
 
   // Helper Functions
   func getClientOrTrap(id : Nat) : ClientProfile {
@@ -161,6 +181,28 @@ actor {
     };
   };
 
+  func isOperator(principal : Principal) : Bool {
+    switch (adminAllowlist.get(principal)) {
+      case (null) { false };
+      case (?entry) { entry.role == #operator };
+    };
+  };
+
+  func getOperatorCount() : Nat {
+    var count = 0;
+    for ((_, entry) in adminAllowlist.entries()) {
+      if (entry.role == #operator) { count += 1 };
+    };
+    count;
+  };
+
+  func isInAllowlist(principal : Principal) : Bool {
+    switch (adminAllowlist.get(principal)) {
+      case (null) { false };
+      case (?_) { true };
+    };
+  };
+
   // User Profile Management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     checkUser(caller);
@@ -177,6 +219,7 @@ actor {
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
     if (not adminCreated) {
       adminCreated := true;
+      canisterDeployer := ?caller;
       userProfiles.add(caller, profile);
       return;
     };
@@ -188,7 +231,6 @@ actor {
   // Client CRUD Operations
   public shared ({ caller }) func createClient(profile : ClientProfile) : async Nat {
     checkAdmin(caller);
-
     let clientId = nextClientId;
     nextClientId += 1;
     let newProfile = { profile with id = clientId };
@@ -198,13 +240,13 @@ actor {
 
   public shared ({ caller }) func updateClient(id : Nat, updatedProfile : ClientProfile) : async () {
     checkAdmin(caller);
-    ignore getClientOrTrap(id); // Ensure client exists
+    ignore getClientOrTrap(id);
     clients.add(id, { updatedProfile with id });
   };
 
   public shared ({ caller }) func deleteClient(id : Nat) : async () {
     checkAdmin(caller);
-    ignore getClientOrTrap(id); // Ensure client exists
+    ignore getClientOrTrap(id);
     clients.remove(id);
   };
 
@@ -228,18 +270,18 @@ actor {
 
     let updatedClient = {
       client with
-      firstName = switch (updates.firstName) { case (?v) v; case null client.firstName };
-      lastName = switch (updates.lastName) { case (?v) v; case null client.lastName };
-      email = switch (updates.email) { case (?v) v; case null client.email };
-      phone = switch (updates.phone) { case (?v) v; case null client.phone };
-      address = switch (updates.address) { case (?v) v; case null client.address };
-      primaryCountry = switch (updates.primaryCountry) { case (?v) v; case null client.primaryCountry };
-      dateOfBirth = switch (updates.dateOfBirth) { case (?v) v; case null client.dateOfBirth };
-      nationality = switch (updates.nationality) { case (?v) v; case null client.nationality };
-      passportNumber = switch (updates.passportNumber) { case (?v) v; case null client.passportNumber };
-      passportExpiryDate = switch (updates.passportExpiryDate) { case (?v) v; case null client.passportExpiryDate };
-      placeOfBirth = switch (updates.placeOfBirth) { case (?v) v; case null client.placeOfBirth };
-      tin = switch (updates.tin) { case (?v) v; case null client.tin };
+      firstName = switch (updates.firstName) { case (?v) { v }; case (null) { client.firstName } };
+      lastName = switch (updates.lastName) { case (?v) { v }; case (null) { client.lastName } };
+      email = switch (updates.email) { case (?v) { v }; case (null) { client.email } };
+      phone = switch (updates.phone) { case (?v) { v }; case (null) { client.phone } };
+      address = switch (updates.address) { case (?v) { v }; case (null) { client.address } };
+      primaryCountry = switch (updates.primaryCountry) { case (?v) { v }; case (null) { client.primaryCountry } };
+      dateOfBirth = switch (updates.dateOfBirth) { case (?v) { v }; case (null) { client.dateOfBirth } };
+      nationality = switch (updates.nationality) { case (?v) { v }; case (null) { client.nationality } };
+      passportNumber = switch (updates.passportNumber) { case (?v) { v }; case (null) { client.passportNumber } };
+      passportExpiryDate = switch (updates.passportExpiryDate) { case (?v) { v }; case (null) { client.passportExpiryDate } };
+      placeOfBirth = switch (updates.placeOfBirth) { case (?v) { v }; case (null) { client.placeOfBirth } };
+      tin = switch (updates.tin) { case (?v) { v }; case (null) { client.tin } };
     };
 
     clients.add(id, updatedClient);
@@ -276,7 +318,7 @@ actor {
     checkUser(caller);
 
     let stages = ["Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5", "Stage 6"];
-    let stageLists = List.fromArray<List.List<OnboardingCard>>(Array.tabulate<List.List<OnboardingCard>>(6, func(i) { List.empty<OnboardingCard>() }));
+    let stageLists = List.fromArray<List.List<OnboardingCard>>([List.empty<OnboardingCard>(), List.empty<OnboardingCard>(), List.empty<OnboardingCard>(), List.empty<OnboardingCard>(), List.empty<OnboardingCard>(), List.empty<OnboardingCard>()]);
 
     for ((_, client) in clients.entries()) {
       for (step in client.onboardingSteps.values()) {
@@ -387,5 +429,145 @@ actor {
       mediumRiskCount;
       highRiskCount;
     };
+  };
+
+  // Admin Allowlist Functions
+
+  // Add admin method - bootstrap: deployer becomes operator, then only operator can add
+  public shared ({ caller }) func addAdmin(principal : Principal, name : Text, role : AdminRole) : async Bool {
+    let operatorCount = getOperatorCount();
+
+    // Bootstrap: first call must be from canister deployer
+    if (operatorCount == 0) {
+      switch (canisterDeployer) {
+        case (null) {
+          Runtime.trap("Canister deployer not initialized");
+        };
+        case (?deployer) {
+          if (caller != deployer) {
+            Runtime.trap("Unauthorized: Only canister deployer can create initial operator");
+          };
+          // First admin must be operator
+          if (role != #operator) {
+            Runtime.trap("First admin must be an operator");
+          };
+          adminAllowlist.add(principal, {
+            principal;
+            name;
+            role = #operator;
+            addedOn = Time.now();
+          });
+          return true;
+        };
+      };
+    };
+
+    // After bootstrap: only operator can add admins
+    if (not isOperator(caller)) {
+      Runtime.trap("Unauthorized: Only operator can add admins");
+    };
+
+    adminAllowlist.add(principal, {
+      principal;
+      name;
+      role;
+      addedOn = Time.now();
+    });
+    true;
+  };
+
+  // Remove admin (except operator) - only operator can do this
+  public shared ({ caller }) func removeAdmin(principal : Principal) : async Bool {
+    if (not isOperator(caller)) {
+      Runtime.trap("Unauthorized: Only operator can remove admins");
+    };
+
+    switch (adminAllowlist.get(principal)) {
+      case (null) { Runtime.trap("Admin not found") };
+      case (?admin) {
+        if (admin.role == #operator) {
+          Runtime.trap("Cannot remove operator entry");
+        };
+        adminAllowlist.remove(principal);
+        true;
+      };
+    };
+  };
+
+  // Get all admin entries - only authorized users can view
+  public query ({ caller }) func getAdminEntries() : async [AdminEntry] {
+    if (adminAllowlist.isEmpty()) {
+      registerFirstOperator(caller);
+      return adminAllowlist.values().toArray();
+    };
+
+    if (not isInAllowlist(caller)) {
+      Runtime.trap("Unauthorized: Only authorized admins can view admin list");
+    };
+    adminAllowlist.values().toArray();
+  };
+
+  func registerFirstOperator(caller : Principal) {
+    if (not adminAllowlist.isEmpty()) {
+      Runtime.trap("Operator already exists");
+    };
+
+    adminAllowlist.add(caller, {
+      principal = caller;
+      name = "System Administrator";
+      role = #operator;
+      addedOn = Time.now();
+    });
+  };
+
+  // Get single admin entry - only authorized users can view
+  public query ({ caller }) func getAdminEntry(principal : Principal) : async AdminEntry {
+    if (not isInAllowlist(caller)) {
+      Runtime.trap("Unauthorized: Only authorized admins can view admin entries");
+    };
+    switch (adminAllowlist.get(principal)) {
+      case (null) { Runtime.trap("Admin entry not found") };
+      case (?entry) { entry };
+    };
+  };
+
+  // Get caller's own admin entry
+  public query ({ caller }) func getCallerAdminEntry() : async ?AdminEntry {
+    adminAllowlist.get(caller);
+  };
+
+  // Check if caller is authorized - PUBLIC endpoint for frontend verification
+  public query ({ caller }) func isAuthorized() : async AuthorizationResult {
+    let operatorCount = getOperatorCount();
+
+    if (operatorCount == 0) {
+      return {
+        status = #operatorMissing;
+        message = "Operator entry does not exist. Please create one.";
+      };
+    };
+
+    switch (adminAllowlist.get(caller)) {
+      case (null) {
+        {
+          status = #unauthorized;
+          message = "Unknown Principal. You are not authorized.";
+        };
+      };
+      case (?entry) {
+        {
+          status = #authorized;
+          message = "Authorized as " # (if (entry.role == #operator) { "Operator" } else { "Staff" });
+        };
+      };
+    };
+  };
+
+  // Get allowlist size - only authorized users can view
+  public query ({ caller }) func getAllowlistSize() : async Nat {
+    if (not isInAllowlist(caller)) {
+      Runtime.trap("Unauthorized: Only authorized admins can view allowlist size");
+    };
+    adminAllowlist.size();
   };
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useGetClient, useUpdateClientOverviewFields, useAppendActivityLogEntries, useGetClientActivityLog, useGetCallerUserProfile } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
@@ -15,19 +15,31 @@ import { mockClients } from '../mocks/clientsListMock';
 import { getLocalClient, updateLocalClient } from '../utils/localClients';
 import { generateMockClientDetail } from '../mocks/clientDetailMock';
 import { loadClientOverrides, saveClientOverrides } from '../utils/clientOverrides';
-import { loadClientActivityLog, appendClientActivityLog } from '../utils/clientActivityLog';
+import { loadClientActivityLog, appendClientActivityLog, appendLocalActivityLog, type LocalActivityLogEntry } from '../utils/clientActivityLog';
 import { generateClientPDF } from '../utils/clientPdfExport';
 import { downloadPDF, sanitizeFilename, formatDateForFilename } from '../utils/pdfDownload';
 import type { ClientProfile, ActivityLogEntry } from '../backend';
+
+async function fetchIPAddress(): Promise<string> {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json', { 
+      signal: AbortSignal.timeout(3000) 
+    });
+    const data = await response.json();
+    return data.ip || '—';
+  } catch {
+    return '—';
+  }
+}
 
 export default function ClientDetailPage() {
   const { clientId } = useParams({ from: '/clients/$clientId' });
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditMode, setIsEditMode] = useState(false);
-  const [draftOverview, setDraftOverview] = useState<Record<string, string>>({});
   const [originalOverview, setOriginalOverview] = useState<Record<string, string>>({});
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const numericId = parseInt(clientId, 10);
   const { data: backendClient, isLoading, error } = useGetClient(numericId);
@@ -52,27 +64,75 @@ export default function ClientDetailPage() {
   const localActivityLog = loadClientActivityLog(clientId);
   const mergedActivityLog = [...(backendActivityLog || []), ...localActivityLog];
 
-  // Initialize draft state when entering edit mode
+  // Initialize original state when entering edit mode - ALL fields from ALL 6 sections
   useEffect(() => {
     if (isEditMode && client) {
+      const passportDoc = mockDetailData.identityDocuments.find(doc => doc.type === 'Passport');
+      
       const overview = {
+        // Contact Details section
+        accountId: client.accountId || client.id.toString(),
         firstName: client.firstName || '',
         lastName: client.lastName || '',
-        email: client.email || '',
-        phone: client.phone || '',
-        address: client.address || '',
-        primaryCountry: client.primaryCountry || '',
-        dateOfBirth: client.dateOfBirth || '',
-        nationality: client.nationality || '',
-        passportNumber: client.passportNumber || '',
-        passportExpiryDate: client.passportExpiryDate || '',
-        placeOfBirth: client.placeOfBirth || '',
-        tin: client.tin || '',
+        address: client.address || mockDetailData.contactDetails.primaryAddress || '',
+        primaryCountry: client.primaryCountry || 'Switzerland',
+        email: client.email || mockDetailData.contactDetails.email || '',
+        phone: client.phone || mockDetailData.contactDetails.phone || '',
+        telegram: overrides.telegram || '@client_telegram',
+        linkedin: overrides.linkedin || 'linkedin.com/in/client',
+        dateCreated: overrides.dateCreated || '2024-01-15',
+        
+        // Personal Data section
+        dateOfBirth: client.dateOfBirth || mockDetailData.personalInfo.dateOfBirth || '',
+        passportNumber: client.passportNumber || passportDoc?.number || 'N/A',
+        passportExpiryDate: client.passportExpiryDate || passportDoc?.expiryDate || 'N/A',
+        nationality: client.nationality || mockDetailData.personalInfo.nationality || '',
+        tin: client.tin || mockDetailData.taxInformation.taxIdNumbers[0] || 'N/A',
+        placeOfBirth: client.placeOfBirth || 'Zürich, Switzerland',
+        issuingAuthority: overrides.issuingAuthority || passportDoc?.issuingCountry || 'N/A',
+        dateOfIssue: overrides.dateOfIssue || passportDoc?.issueDate || 'N/A',
+        dateOfExpiry: overrides.dateOfExpiry || passportDoc?.expiryDate || 'N/A',
+        
+        // Mandate section
+        brokerageFee: overrides.brokerageFee || '1.5',
+        activeFrom: overrides.activeFrom || '2024-01-15',
+        exitFrom: overrides.exitFrom || 'N/A',
+        telegramChannel: overrides.telegramChannel || '@trading_updates',
+        tradeLimit: overrides.tradeLimit || '500,000',
+        tradedAmount: overrides.tradedAmount || '2,350,000',
+        
+        // Wallets section
+        bitcoinWallet: overrides.bitcoinWallet || 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+        ethereumWallet: overrides.ethereumWallet || '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+        tronWallet: overrides.tronWallet || 'TN3W4H6rK2ce4vX9YnFxx6HhdqKUqvETcd',
+        
+        // Compliance section
+        videoIdCompleted: overrides.videoIdCompleted || 'true',
+        cvCompleted: overrides.cvCompleted || 'true',
+        utilityBillCompleted: overrides.utilityBillCompleted || 'true',
+        sofSowCompleted: overrides.sofSowCompleted || 'true',
+        kycCompleted: overrides.kycCompleted || '2024-01-20',
+        eddCompleted: overrides.eddCompleted || '2024-02-05',
+        mmeConfirmation: overrides.mmeConfirmation || 'true',
+        
+        // VQF section
+        riskProfileAml: overrides.riskProfileAml || 'Low Risk',
+        identification: overrides.identification || 'Verified',
+        customerProfile: overrides.customerProfile || 'Standard',
+        formAOrK: overrides.formAOrK || 'Form A',
+        fatfTravelRule: overrides.fatfTravelRule || 'Compliant',
+        categoryRisk: overrides.categoryRisk || 'Category 1',
+        incomeAnnualSales: overrides.incomeAnnualSales || '850,000',
+        fortuneAssets: overrides.fortuneAssets || '7,500,000',
+        liabilities: overrides.liabilities || '450,000',
+        highRiskConfirmed: overrides.highRiskConfirmed || 'false',
+        amlNoteDocumentation: overrides.amlNoteDocumentation || 'Complete',
+        produceHighRisk: overrides.produceHighRisk || 'false',
+        videoIdUtility: overrides.videoIdUtility || 'true',
       };
-      setDraftOverview(overview);
       setOriginalOverview(overview);
     }
-  }, [isEditMode, client]);
+  }, [isEditMode, client, mockDetailData, overrides]);
 
   const handleEditClick = () => {
     setIsEditMode(true);
@@ -80,28 +140,72 @@ export default function ClientDetailPage() {
 
   const handleCancelClick = () => {
     setIsEditMode(false);
-    setDraftOverview({});
     setOriginalOverview({});
   };
 
   const handleSaveClick = async () => {
-    if (!client) return;
+    if (!client || !formRef.current) return;
+
+    // Collect values from form using FormData
+    const formData = new FormData(formRef.current);
+    const draftOverview: Record<string, string> = {};
+    
+    // Build draft object from FormData
+    formData.forEach((value, key) => {
+      draftOverview[key] = value.toString();
+    });
 
     // Compute changes
     const changes: Array<{ field: string; oldValue: string; newValue: string }> = [];
     const fieldLabels: Record<string, string> = {
+      accountId: 'Account ID',
       firstName: 'First Name',
       lastName: 'Last Name',
       email: 'Email',
       phone: 'Phone',
       address: 'Address',
       primaryCountry: 'Primary Country',
+      telegram: 'Telegram',
+      linkedin: 'LinkedIn',
+      dateCreated: 'Date Created',
       dateOfBirth: 'Date of Birth',
       nationality: 'Nationality',
       passportNumber: 'Passport Number',
-      passportExpiryDate: 'Passport Expiry Date',
+      passportExpiryDate: 'Passport Expiry',
       placeOfBirth: 'Place of Birth',
       tin: 'TIN',
+      issuingAuthority: 'Issuing Authority',
+      dateOfIssue: 'Date of Issue',
+      dateOfExpiry: 'Date of Expiry',
+      brokerageFee: 'Brokerage Fee (%)',
+      activeFrom: 'Active From',
+      exitFrom: 'Exit From',
+      telegramChannel: 'Telegram Channel',
+      tradeLimit: 'Trade Limit (CHF)',
+      tradedAmount: 'Traded Amount (CHF)',
+      bitcoinWallet: 'Bitcoin Wallet',
+      ethereumWallet: 'Ethereum Wallet',
+      tronWallet: 'TRON Wallet',
+      videoIdCompleted: 'Video ID Completed',
+      cvCompleted: 'CV Completed',
+      utilityBillCompleted: 'Utility Bill Completed',
+      sofSowCompleted: 'SOF/SOW Completed',
+      kycCompleted: 'KYC Completed',
+      eddCompleted: 'EDD Completed',
+      mmeConfirmation: 'MME Confirmation',
+      riskProfileAml: 'Risk Profile AML',
+      identification: 'Identification',
+      customerProfile: 'Customer Profile',
+      formAOrK: 'Form A or K',
+      fatfTravelRule: 'FATF Travel Rule',
+      categoryRisk: 'Category Risk',
+      incomeAnnualSales: 'Income/Annual Sales (CHF)',
+      fortuneAssets: 'Fortune/Assets (CHF)',
+      liabilities: 'Liabilities (CHF)',
+      highRiskConfirmed: 'High Risk Confirmed',
+      amlNoteDocumentation: 'AML Note Documentation',
+      produceHighRisk: 'Produce High Risk',
+      videoIdUtility: 'VideoID+Utility',
     };
 
     Object.keys(draftOverview).forEach((key) => {
@@ -119,18 +223,34 @@ export default function ClientDetailPage() {
       return;
     }
 
-    // Prepare activity log entries
-    const userName = userProfile?.name || userProfile?.email || 'Unknown User';
+    // Fetch IP address
+    const ipAddress = await fetchIPAddress();
+
+    // Prepare user display string
+    const userName = userProfile?.name || 'Unknown';
+    const userEmail = userProfile?.email || '';
+    const userDisplay = userEmail ? `${userName} (${userEmail})` : userName;
+
+    // Prepare activity log entries for backend
     const activityEntries: ActivityLogEntry[] = changes.map((change) => ({
       timestamp: BigInt(Date.now() * 1000000), // nanoseconds
       fieldName: change.field,
       oldValue: change.oldValue,
       newValue: change.newValue,
-      user: userName,
+      user: userDisplay,
+    }));
+
+    // Prepare local activity log entries
+    const localEntries: LocalActivityLogEntry[] = changes.map((change) => ({
+      timestamp: Date.now(),
+      user: userDisplay,
+      action: 'Updated',
+      details: `${change.field}: "${change.oldValue}" → "${change.newValue}"`,
+      ip: ipAddress,
     }));
 
     try {
-      // Try to persist to backend if it's a backend client
+      // Try to persist backend-supported fields to backend if it's a backend client
       if (backendClient) {
         await updateOverviewMutation.mutateAsync({
           id: BigInt(numericId),
@@ -157,7 +277,7 @@ export default function ClientDetailPage() {
         });
       }
 
-      // Always save to local storage as fallback/override
+      // Always save ALL fields to local storage (including non-backend fields)
       saveClientOverrides(clientId, draftOverview);
 
       // Update local client if it's a local client
@@ -166,26 +286,21 @@ export default function ClientDetailPage() {
         updateLocalClient(BigInt(clientId), { ...localClient, ...draftOverview });
       }
 
-      // Append to local activity log
-      appendClientActivityLog(clientId, activityEntries);
+      // Append to local activity log with new format
+      appendLocalActivityLog(clientId, localEntries);
 
       setIsEditMode(false);
-      setDraftOverview({});
       setOriginalOverview({});
     } catch (error) {
       console.error('Failed to save changes:', error);
       // Still save locally as fallback
       saveClientOverrides(clientId, draftOverview);
-      appendClientActivityLog(clientId, activityEntries);
+      appendLocalActivityLog(clientId, localEntries);
       setIsEditMode(false);
     }
   };
 
-  const handleFieldChange = (field: string, value: string) => {
-    setDraftOverview((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!client) return;
 
     setIsExportingPDF(true);
@@ -204,6 +319,22 @@ export default function ClientDetailPage() {
 
       // Trigger print via popup window
       downloadPDF(pdfHtml, filename);
+
+      // Log the export action
+      const ipAddress = await fetchIPAddress();
+      const userName = userProfile?.name || 'Unknown';
+      const userEmail = userProfile?.email || '';
+      const userDisplay = userEmail ? `${userName} (${userEmail})` : userName;
+
+      const exportLogEntry: LocalActivityLogEntry = {
+        timestamp: Date.now(),
+        user: userDisplay,
+        action: 'Exported PDF',
+        details: `Exported client profile as PDF: ${filename}.pdf`,
+        ip: ipAddress,
+      };
+
+      appendLocalActivityLog(clientId, [exportLogEntry]);
     } catch (error) {
       console.error('Failed to export PDF:', error);
     } finally {
@@ -344,28 +475,29 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="identity-kyc">Identity & KYC</TabsTrigger>
           <TabsTrigger value="activity-log">Activity Log</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
-          <ClientOverviewTab
-            mockData={mockDetailData}
-            client={client}
-            isEditMode={isEditMode}
-            draftValues={draftOverview}
-            onFieldChange={handleFieldChange}
-          />
+        <TabsContent value="overview" className="mt-6">
+          <form ref={formRef}>
+            <ClientOverviewTab
+              client={client}
+              mockData={mockDetailData}
+              isEditMode={isEditMode}
+              originalValues={originalOverview}
+            />
+          </form>
         </TabsContent>
 
-        <TabsContent value="identity-kyc" className="space-y-6">
+        <TabsContent value="identity-kyc" className="mt-6">
           <ClientIdentityKycTab mockData={mockDetailData} />
         </TabsContent>
 
-        <TabsContent value="activity-log" className="space-y-6">
+        <TabsContent value="activity-log" className="mt-6">
           <ClientActivityLogTab activityLog={mergedActivityLog} />
         </TabsContent>
       </Tabs>

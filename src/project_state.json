@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 31,
+  "projectStateVersion": 47,
   "summary": "Build a CRM application for a Swiss financial advisory firm (FE Swiss Financial) with a Swiss-style minimalist UI, including a rebuilt sidebar navigation (Dashboard, Clients, Onboarding, KYC Screening, Reports, Settings), dashboard analytics, client list management (with Add New Client CTA on Clients page), detailed client profiles, onboarding kanban pipeline, KYC screening management with manual check entry, and compliance reporting views.",
   "architectural_notes": [
     "Add role/permission concept (at minimum: admin) and an initialization/bootstrap rule to assign admin to the first created record.",
@@ -19,7 +19,12 @@
     "Clients page content is still partially hidden under the left sidebar (insufficient left margin/padding).",
     "Add Client page: 'Create Client' button currently does nothing (no save/no navigation).",
     "Export PDF filename still incorrect: Caffeine platform overrides document/iframe titles even with iframe print approach; must stop using print-based flows and switch to direct jsPDF download to control filename.",
-    "jsPDF-based Export PDF is not viable because the jsPDF library is not available in this project; revert to a popup-window print approach."
+    "jsPDF-based Export PDF is not viable because the jsPDF library is not available in this project; revert to a popup-window print approach.",
+    "Client Detail: Export PDF button currently does nothing (download/print flow not triggering); `downloadPDF` in `pdfDownload.ts` needs to be fixed.",
+    "Client Detail: Edit Client button is broken; edit mode does not properly allow editing all fields and/or Save/Cancel does not persist/restore values as required.",
+    "Client Overview edit mode: input fields render but are not editable (typing is frozen) due to controlled input state not updating `draftValues` correctly; React resets value each keystroke.",
+    "Edit Client inputs still frozen in Overview edit mode; controlled-input state approach is resetting on render and must be replaced with uncontrolled inputs + FormData/ref-based Save collection (no other pages/features changed).",
+    "Settings > Admin Management: deployer/caller is not auto-registered as Operator when admin list is empty (bootstrap missing)."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -382,6 +387,182 @@
         "REQ-50"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-utils-pdfdownload-ts-so-downloadpdf-htmlcontent-filename-uses-a-blob-url-approach-instead-of-the-current-popup-window-document-write-flow-to-ensure-the-client-detail-page-export-pdf-action-reliably-opens-and-triggers-printing-implementation-requirements-for-downloadpdf-htmlcontent-filename-create-a-new-html-string-from-htmlcontent-that-injects-overrides-a-title-element-in-the-head-to-exactly-filename-append-an-auto-print-script-at-the-end-of-the-body-that-triggers-printing-automatically-after-the-document-loads-and-closes-the-tab-window-afterward-when-possible-create-a-blob-from-the-final-html-string-with-mime-type-text-html-create-a-blob-url-with-url-createobjecturl-blob-open-the-blob-url-in-a-new-tab-via-window-open-bloburl-clean-up-the-blob-url-via-url-revokeobjecturl-bloburl-at-an-appropriate-time-so-it-does-not-leak-memory-do-not-change-generateclientpdf-or-frontend-src-pages-clientdetailpage-tsx-the-existing-call-site-must-keep-working-unchanged",
+      "title": "Update `frontend/src/utils/pdfDownload.ts` so `downloadPDF(htmlContent, filename)` uses a Blob URL approach (instead of the current popup-window `document.write` flow) to ensure the Client Detail page “Export PDF” action reliably opens and triggers printing.\n\nImplementation requirements for `downloadPDF(htmlContent, filename)`:\n- Create a new HTML string from `htmlContent` that injects/overrides a `<title>` element in the `<head>` to exactly `filename`.\n- Append an auto-print script at the end of the `<body>` that triggers printing automatically after the document loads (and closes the tab/window afterward when possible).\n- Create a `Blob` from the final HTML string with MIME type `text/html`.\n- Create a Blob URL with `URL.createObjectURL(blob)`.\n- Open the Blob URL in a new tab via `window.open(blobUrl)`.\n- Clean up the Blob URL via `URL.revokeObjectURL(blobUrl)` at an appropriate time so it does not leak memory.\n\nDo not change `generateClientPDF` or `frontend/src/pages/ClientDetailPage.tsx`; the existing call site must keep working unchanged.",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-client-detail-page-edit-client-workflow-so-that-clicking-edit-client-correctly-enters-edit-mode-for-the-overview-tab-and-makes-every-field-in-all-6-overview-sections-contact-details-personal-data-mandate-wallets-compliance-vqf-editable-as-a-text-input-allowing-the-user-to-type-new-values-into-any-field",
+      "title": "Fix the Client Detail page “Edit Client” workflow so that clicking “Edit Client” correctly enters edit mode for the Overview tab and makes every field in all 6 Overview sections (Contact Details, Personal Data, Mandate, Wallets, Compliance, VQF) editable as a text input, allowing the user to type new values into any field.",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-correct-save-cancel-behavior-for-the-overview-edit-mode-save-persists-the-edited-values-and-displays-them-after-save-cancel-discards-edits-and-restores-the-original-values-shown-before-entering-edit-mode",
+      "title": "Implement correct Save/Cancel behavior for the Overview edit mode: Save persists the edited values and displays them after save; Cancel discards edits and restores the original values shown before entering edit mode.",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-persist-overview-edits-to-browser-localstorage-so-that-saved-changes-survive-page-refresh-using-a-per-client-key-strategy-loading-the-client-detail-page-must-hydrate-the-overview-display-from-localstorage-when-present-for-that-client-id",
+      "title": "Persist Overview edits to browser localStorage so that saved changes survive page refresh, using a per-client key strategy. Loading the Client Detail page must hydrate the Overview display from localStorage (when present) for that client ID.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-strict-change-scope-only-modify-frontend-src-pages-clientdetailpage-tsx-and-frontend-src-components-clients-clientoverviewtab-tsx-to-deliver-the-edit-client-fix-do-not-modify-any-other-files-or-any-export-pdf-functionality",
+      "title": "Apply strict change scope: only modify `frontend/src/pages/ClientDetailPage.tsx` and `frontend/src/components/clients/ClientOverviewTab.tsx` to deliver the Edit Client fix; do not modify any other files or any Export PDF functionality.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-react-controlled-input-bug-in-frontend-src-components-clients-clientoverviewtab-tsx-so-that-in-overview-edit-mode-users-can-type-into-every-field-input-and-each-keystroke-updates-the-draft-state-no-value-freezing-or-resetting-specifically-1-in-edit-mode-each-fieldrow-input-must-render-its-value-from-draftvalues-fieldname-when-present-falling-back-to-the-current-display-value-and-2-each-input-must-call-onfieldchange-fieldname-e-target-value-on-every-change-so-the-parent-draft-record-updates-continuously",
+      "title": "Fix the React controlled-input bug in `frontend/src/components/clients/ClientOverviewTab.tsx` so that, in Overview edit mode, users can type into every field input and each keystroke updates the draft state (no value “freezing” or resetting). Specifically: (1) in edit mode, each `FieldRow` `<Input>` must render its `value` from `draftValues[fieldName]` when present, falling back to the current display value; and (2) each `<Input>` must call `onFieldChange(fieldName, e.target.value)` on every change so the parent draft record updates continuously.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-the-client-detail-overview-edit-workflow-replace-the-current-react-controlled-input-approach-with-an-uncontrolled-input-approach-so-users-can-type-into-every-field-specifically-in-frontend-src-components-clients-clientoverviewtab-tsx-when-iseditmode-is-true-render-each-editable-input-using-defaultvalue-currentvalue-not-value-and-ensure-each-input-has-a-name-attribute-that-exactly-matches-its-field-key-e-g-firstname-passportexpirydate-videoidcompleted-etc-do-not-rely-on-draftvalues-state-to-drive-the-inputs-while-typing",
+      "title": "In the Client Detail Overview edit workflow, replace the current React controlled-input approach with an uncontrolled-input approach so users can type into every field. Specifically: in `frontend/src/components/clients/ClientOverviewTab.tsx`, when `isEditMode` is true, render each editable `<Input>` using `defaultValue={currentValue}` (not `value={...}`) and ensure each input has a `name` attribute that exactly matches its field key (e.g., `firstName`, `passportExpiryDate`, `videoIdCompleted`, etc.). Do not rely on `draftValues` state to drive the inputs while typing.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-clientdetailpage-tsx-and-frontend-src-components-clients-clientoverviewtab-tsx-so-the-save-operation-collects-updated-overview-values-from-the-dom-via-a-form-ref-formdata-instead-of-using-react-draft-state-wrap-the-overview-edit-inputs-in-a-form-element-either-in-clientdetailpage-tsx-around-the-overview-tab-content-or-inside-clientoverviewtab-tsx-and-store-a-useref-htmlformelement-to-it-when-save-is-clicked-call-new-formdata-formref-current-to-build-the-updated-overview-object-keyed-by-input-name-then-run-the-existing-change-detection-persistence-backend-where-supported-local-overrides-and-activity-log-append-flows-based-on-the-formdata-derived-values-cancel-must-discard-unsaved-changes-by-exiting-edit-mode-without-persisting-anything",
+      "title": "Update `frontend/src/pages/ClientDetailPage.tsx` and `frontend/src/components/clients/ClientOverviewTab.tsx` so the Save operation collects updated Overview values from the DOM via a form ref + `FormData`, instead of using React draft state. Wrap the Overview edit inputs in a `<form>` element (either in `ClientDetailPage.tsx` around the Overview tab content or inside `ClientOverviewTab.tsx`) and store a `useRef<HTMLFormElement>` to it. When “Save” is clicked, call `new FormData(formRef.current)` to build the updated overview object keyed by input `name`, then run the existing change detection, persistence (backend where supported + local overrides), and activity log append flows based on the FormData-derived values. Cancel must discard unsaved changes by exiting edit mode without persisting anything.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-limit-the-change-scope-strictly-to-the-two-files-involved-in-the-bug-frontend-src-pages-clientdetailpage-tsx-and-frontend-src-components-clients-clientoverviewtab-tsx-do-not-modify-any-other-pages-tabs-utilities-including-pdf-export-backend-code-or-shared-ui-components",
+      "title": "Limit the change scope strictly to the two files involved in the bug: `frontend/src/pages/ClientDetailPage.tsx` and `frontend/src/components/clients/ClientOverviewTab.tsx`. Do not modify any other pages, tabs, utilities (including PDF export), backend code, or shared UI components.",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-client-detail-page-activity-log-tab-to-display-a-newest-first-chronological-table-of-client-change-events-with-exactly-these-columns-english-labels-date-user-action-details-ip-the-tab-must-render-log-entries-stored-in-localstorage-per-client-id-and-may-also-include-any-existing-backend-provided-entries-if-present-and-must-show-an-empty-state-message-when-no-entries-exist",
+      "title": "Update the Client Detail page Activity Log tab to display a newest-first chronological table of client change events with exactly these columns (English labels): Date, User, Action, Details, IP. The tab must render log entries stored in localStorage per client ID (and may also include any existing backend-provided entries if present), and must show an empty state message when no entries exist.",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-client-detail-overview-edit-mode-save-compare-the-submitted-formdata-values-against-the-original-values-captured-when-entering-edit-mode-and-append-one-activity-log-entry-per-changed-field-to-localstorage-under-a-per-client-id-key-each-entry-must-include-timestamp-date-time-user-name-and-email-from-the-logged-in-user-profile-action-type-updated-details-containing-field-name-old-value-new-value-and-ip-address-fetched-from-https-api-ipify-org-or-a-placeholder-if-unavailable",
+      "title": "On Client Detail Overview edit-mode Save, compare the submitted FormData values against the original values captured when entering edit mode, and append one Activity Log entry per changed field to localStorage under a per-client-ID key. Each entry must include: timestamp (date+time), user name and email (from the logged-in user profile), action type \"Updated\", details containing field name + old value + new value, and IP address (fetched from https://api.ipify.org or a placeholder if unavailable).",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-client-detail-export-pdf-action-append-a-single-activity-log-entry-in-localstorage-for-the-current-client-id-with-action-type-exported-pdf-including-timestamp-date-time-user-name-and-email-ip-address-api-ipify-org-or-placeholder-and-details-indicating-the-export-occurred-and-may-include-the-generated-filename",
+      "title": "On Client Detail \"Export PDF\" action, append a single Activity Log entry in localStorage for the current client ID with action type \"Exported PDF\", including timestamp (date+time), user name and email, IP address (api.ipify.org or placeholder), and Details indicating the export occurred (and may include the generated filename).",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enforce-frontend-authorization-gating-after-internet-identity-login-if-the-logged-in-principal-is-not-present-in-the-backend-authorized-table-render-an-access-denied-screen-that-says-exactly-your-principal-id-is-not-authorized-contact-the-administrator",
+      "title": "Enforce frontend authorization gating after Internet Identity login: if the logged-in Principal is not present in the backend authorized table, render an Access Denied screen that says exactly: \"Your Principal ID is not authorized. Contact the administrator.\"",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-when-a-user-is-authorized-display-their-authorized-display-name-and-role-operator-staff-in-the-application-header-or-sidebar",
+      "title": "When a user is authorized, display their authorized display name and role (Operator/Staff) in the application header or sidebar.",
+      "reqIds": [
+        "REQ-67"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-settings-page-ui-to-include-an-admin-management-section-showing-the-backend-allowlist-in-a-table-with-columns-principal-id-name-role-date-added-and-a-remove-button-remove-visible-only-for-operator-include-an-add-staff-form-with-fields-principal-id-and-display-name",
+      "title": "Extend the Settings page UI to include an \"Admin Management\" section showing the backend allowlist in a table with columns: Principal ID, Name, Role, Date Added, and a Remove button (Remove visible only for Operator). Include an \"Add Staff\" form with fields: Principal ID and Display Name.",
+      "reqIds": [
+        "REQ-68"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-react-query-hooks-for-admin-management-backend-calls-current-authorization-entry-list-authorized-entries-add-staff-remove-staff-and-integrate-them-into-the-settings-page-and-authorization-gate",
+      "title": "Add React Query hooks for Admin Management backend calls (current authorization entry, list authorized entries, add staff, remove staff) and integrate them into the Settings page and authorization gate.",
+      "reqIds": [
+        "REQ-69"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-settings-admin-management-ui-so-that-when-the-logged-in-user-is-the-operator-an-add-staff-form-is-visible-with-exactly-these-fields-principal-id-and-display-name-plus-an-add-button-that-adds-a-staff-entry-via-the-existing-add-admin-mutation",
+      "title": "Fix the Settings > Admin Management UI so that when the logged-in user is the Operator, an “Add Staff” form is visible with exactly these fields: Principal ID and Display Name, plus an Add button that adds a Staff entry via the existing add-admin mutation.",
+      "reqIds": [
+        "REQ-72"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-settings-admin-management-table-rendering-to-match-these-columns-in-this-order-principal-id-name-role-date-added-remove-button-only-show-the-remove-button-for-operator-users-and-never-show-remove-on-the-operator-s-own-row",
+      "title": "Fix the Settings > Admin Management table rendering to match these columns in this order: Principal ID, Name, Role, Date Added, Remove button; only show the Remove button for Operator users, and never show Remove on the Operator’s own row.",
+      "reqIds": [
+        "REQ-73"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-frontend-operator-detection-logic-used-by-admin-management-so-it-uses-the-backend-current-caller-admin-entry-endpoint-instead-of-the-current-broken-heuristic-and-correctly-enables-operator-only-ui-add-staff-form-remove-buttons-when-appropriate",
+      "title": "Fix the frontend Operator detection logic used by Admin Management so it uses the backend “current caller admin entry” endpoint (instead of the current broken heuristic) and correctly enables Operator-only UI (Add Staff form + Remove buttons) when appropriate.",
+      "reqIds": [
+        "REQ-74"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-operator-detection-logic-in-frontend-src-components-settings-adminmanagementsection-tsx-so-that-the-add-staff-form-is-visible-when-and-only-when-the-logged-in-user-s-principal-id-matches-the-principal-id-of-the-operator-entry-in-the-admin-entries-table-returned-by-usegetadminentries-backend-getadminentries-do-not-rely-solely-on-usegetmyadminentry-for-this-ui-gate-instead-compute-isoperator-using-a-direct-principal-id-comparison-against-the-operator-row-in-adminentries-with-usegetmyadminentry-allowed-only-as-an-optional-fallback-if-needed",
+      "title": "Fix the Operator detection logic in `frontend/src/components/settings/AdminManagementSection.tsx` so that the Add Staff form is visible when (and only when) the logged-in user’s Principal ID matches the Principal ID of the Operator entry in the admin entries table returned by `useGetAdminEntries()` (backend `getAdminEntries`). Do not rely solely on `useGetMyAdminEntry()` for this UI gate; instead, compute `isOperator` using a direct Principal ID comparison against the Operator row in `adminEntries` (with `useGetMyAdminEntry()` allowed only as an optional fallback if needed).",
+      "reqIds": [
+        "REQ-75"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-settings-admin-management-ui-renders-the-add-staff-form-directly-below-the-admin-entries-table-with-exactly-a-principal-id-text-input-a-display-name-text-input-and-an-add-staff-button-using-english-user-facing-labels-and-validation-messaging-the-add-staff-action-must-call-the-existing-backend-mutation-via-the-existing-react-query-hook-to-add-the-provided-principal-id-with-role-staff",
+      "title": "Ensure the Settings > Admin Management UI renders the Add Staff form directly below the admin entries table with exactly: a Principal ID text input, a Display Name text input, and an “Add Staff” button, using English user-facing labels and validation messaging. The Add Staff action must call the existing backend mutation (via the existing React Query hook) to add the provided Principal ID with role `Staff`.",
+      "reqIds": [
+        "REQ-76"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-after-a-successful-add-staff-operation-refresh-the-admin-entries-table-so-the-newly-added-staff-entry-appears-also-enforce-correct-remove-button-behavior-show-a-remove-button-for-each-non-operator-row-only-when-the-logged-in-user-is-the-operator-never-show-a-remove-button-on-the-operator-row",
+      "title": "After a successful Add Staff operation, refresh the admin entries table so the newly added Staff entry appears. Also enforce correct Remove button behavior: show a Remove button for each non-Operator row only when the logged-in user is the Operator; never show a Remove button on the Operator row.",
+      "reqIds": [
+        "REQ-77"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -549,6 +730,64 @@
       "id": "AR-31",
       "summary": "Implement functional Export PDF on Client Detail page: generate/download a PDF containing all 6 Overview sections (Contact Details, Personal Data, Mandate, Wallets, Compliance, VQF) with HELVETICA header (logo text, client name, Account ID, current date), clean table layout, and filename ClientName_AccountID_Date.pdf; keep all other pages unchanged",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Fix Export PDF so it works by updating `pdfDownload.ts` `downloadPDF(htmlContent, filename)` to use a Blob URL approach (Blob type `text/html`, inject <title> with filename, append auto-print script, `URL.createObjectURL`, `window.open(blobUrl)`), keeping `generateClientPDF` and `ClientDetailPage` unchanged",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Client Detail Activity Log: implement Activity Log tab showing newest-first table (Date, User name+email, Action: Created/Updated/Exported PDF, Details with field-level old/new, IP via api.ipify.org or placeholder); on Overview Save compare FormData vs original and append one log entry per changed field; store logs in localStorage per client ID; do not change Edit Client behavior or other pages",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Add Settings > Admin Management with Motoko backend authorized Principal allowlist (stable var) + Operator/Staff roles: deployer auto-Operator, Operator-only add/remove (Operator not removable); enforce Internet Identity access control (unauthorized -> Access Denied page), show authorized user name+role in header/sidebar; Settings UI table + Add Staff form; do not change other features",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Implement an Admin allowlist in the Motoko backend stored in stable state, where each authorized entry contains: Principal ID, display name, role (Operator or Staff), and date added.",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-36",
+      "summary": "Bootstrap authorization so the canister deployer is the initial Operator, and enforce Operator-only mutation rules: only the Operator can add or remove other authorized Principals; the Operator entry cannot be removed.",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Add a backend authorization check API that allows the frontend to verify whether the currently authenticated caller Principal is authorized, without requiring the caller to already have user/admin permissions.",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "Update the Motoko backend so that when the admin allowlist is empty and a caller invokes the admin list endpoint (`getAdminEntries`), the backend auto-registers the CALLER as an Operator with display name exactly \"System Administrator\" and sets `addedOn` to the current time, then returns the resulting admin entries list.",
+      "reqIds": [
+        "REQ-70"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-39",
+      "summary": "Add a backend endpoint that returns the current caller’s admin allowlist entry (or null when not present) so the frontend can reliably determine whether the logged-in user is the Operator without fetching and guessing from the full list.",
+      "reqIds": [
+        "REQ-71"
+      ],
       "status": "pending"
     }
   ],

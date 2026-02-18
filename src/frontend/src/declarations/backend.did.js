@@ -8,6 +8,10 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const AdminRole = IDL.Variant({
+  'operator' : IDL.Null,
+  'staff' : IDL.Null,
+});
 export const Time = IDL.Int;
 export const ActivityLogEntry = IDL.Record({
   'oldValue' : IDL.Text,
@@ -78,6 +82,12 @@ export const ClientProfile = IDL.Record({
   'onboardingSteps' : IDL.Vec(OnboardingStep),
   'firstName' : IDL.Text,
 });
+export const AdminEntry = IDL.Record({
+  'principal' : IDL.Principal,
+  'name' : IDL.Text,
+  'role' : AdminRole,
+  'addedOn' : Time,
+});
 export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'role' : IDL.Text,
@@ -105,6 +115,15 @@ export const OnboardingStage = IDL.Record({
   'cards' : IDL.Vec(OnboardingCard),
   'stageName' : IDL.Text,
 });
+export const AuthorizationStatus = IDL.Variant({
+  'authorized' : IDL.Null,
+  'operatorMissing' : IDL.Null,
+  'unauthorized' : IDL.Null,
+});
+export const AuthorizationResult = IDL.Record({
+  'status' : AuthorizationStatus,
+  'message' : IDL.Text,
+});
 export const OverviewFieldUpdate = IDL.Record({
   'tin' : IDL.Opt(IDL.Text),
   'placeOfBirth' : IDL.Opt(IDL.Text),
@@ -122,6 +141,7 @@ export const OverviewFieldUpdate = IDL.Record({
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'addAdmin' : IDL.Func([IDL.Principal, IDL.Text, AdminRole], [IDL.Bool], []),
   'appendActivityLogEntries' : IDL.Func(
       [IDL.Nat, IDL.Vec(ActivityLogEntry)],
       [],
@@ -130,7 +150,11 @@ export const idlService = IDL.Service({
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createClient' : IDL.Func([ClientProfile], [IDL.Nat], []),
   'deleteClient' : IDL.Func([IDL.Nat], [], []),
+  'getAdminEntries' : IDL.Func([], [IDL.Vec(AdminEntry)], ['query']),
+  'getAdminEntry' : IDL.Func([IDL.Principal], [AdminEntry], ['query']),
   'getAllClients' : IDL.Func([], [IDL.Vec(ClientProfile)], ['query']),
+  'getAllowlistSize' : IDL.Func([], [IDL.Nat], ['query']),
+  'getCallerAdminEntry' : IDL.Func([], [IDL.Opt(AdminEntry)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getClient' : IDL.Func([IDL.Nat], [ClientProfile], ['query']),
@@ -142,12 +166,14 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'isAuthorized' : IDL.Func([], [AuthorizationResult], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'moveClientToStage' : IDL.Func(
       [IDL.Nat, IDL.Nat, IDL.Text, IDL.Text, IDL.Opt(Time)],
       [],
       [],
     ),
+  'removeAdmin' : IDL.Func([IDL.Principal], [IDL.Bool], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'updateClient' : IDL.Func([IDL.Nat, ClientProfile], [], []),
   'updateClientOverviewFields' : IDL.Func(
@@ -160,6 +186,7 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const AdminRole = IDL.Variant({ 'operator' : IDL.Null, 'staff' : IDL.Null });
   const Time = IDL.Int;
   const ActivityLogEntry = IDL.Record({
     'oldValue' : IDL.Text,
@@ -230,6 +257,12 @@ export const idlFactory = ({ IDL }) => {
     'onboardingSteps' : IDL.Vec(OnboardingStep),
     'firstName' : IDL.Text,
   });
+  const AdminEntry = IDL.Record({
+    'principal' : IDL.Principal,
+    'name' : IDL.Text,
+    'role' : AdminRole,
+    'addedOn' : Time,
+  });
   const UserProfile = IDL.Record({
     'name' : IDL.Text,
     'role' : IDL.Text,
@@ -257,6 +290,15 @@ export const idlFactory = ({ IDL }) => {
     'cards' : IDL.Vec(OnboardingCard),
     'stageName' : IDL.Text,
   });
+  const AuthorizationStatus = IDL.Variant({
+    'authorized' : IDL.Null,
+    'operatorMissing' : IDL.Null,
+    'unauthorized' : IDL.Null,
+  });
+  const AuthorizationResult = IDL.Record({
+    'status' : AuthorizationStatus,
+    'message' : IDL.Text,
+  });
   const OverviewFieldUpdate = IDL.Record({
     'tin' : IDL.Opt(IDL.Text),
     'placeOfBirth' : IDL.Opt(IDL.Text),
@@ -274,6 +316,7 @@ export const idlFactory = ({ IDL }) => {
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'addAdmin' : IDL.Func([IDL.Principal, IDL.Text, AdminRole], [IDL.Bool], []),
     'appendActivityLogEntries' : IDL.Func(
         [IDL.Nat, IDL.Vec(ActivityLogEntry)],
         [],
@@ -282,7 +325,11 @@ export const idlFactory = ({ IDL }) => {
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createClient' : IDL.Func([ClientProfile], [IDL.Nat], []),
     'deleteClient' : IDL.Func([IDL.Nat], [], []),
+    'getAdminEntries' : IDL.Func([], [IDL.Vec(AdminEntry)], ['query']),
+    'getAdminEntry' : IDL.Func([IDL.Principal], [AdminEntry], ['query']),
     'getAllClients' : IDL.Func([], [IDL.Vec(ClientProfile)], ['query']),
+    'getAllowlistSize' : IDL.Func([], [IDL.Nat], ['query']),
+    'getCallerAdminEntry' : IDL.Func([], [IDL.Opt(AdminEntry)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getClient' : IDL.Func([IDL.Nat], [ClientProfile], ['query']),
@@ -302,12 +349,14 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'isAuthorized' : IDL.Func([], [AuthorizationResult], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'moveClientToStage' : IDL.Func(
         [IDL.Nat, IDL.Nat, IDL.Text, IDL.Text, IDL.Opt(Time)],
         [],
         [],
       ),
+    'removeAdmin' : IDL.Func([IDL.Principal], [IDL.Bool], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'updateClient' : IDL.Func([IDL.Nat, ClientProfile], [], []),
     'updateClientOverviewFields' : IDL.Func(

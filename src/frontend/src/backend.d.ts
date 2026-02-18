@@ -7,6 +7,11 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface UserProfile {
+    name: string;
+    role: string;
+    email: string;
+}
 export type Time = bigint;
 export interface OnboardingCard {
     clientId: bigint;
@@ -35,13 +40,6 @@ export interface DashboardStats {
     activeCount: bigint;
     onboardingCount: bigint;
 }
-export interface ActivityLogEntry {
-    oldValue: string;
-    user: string;
-    newValue: string;
-    timestamp: Time;
-    fieldName: string;
-}
 export interface OverviewFieldUpdate {
     tin?: string;
     placeOfBirth?: string;
@@ -55,6 +53,23 @@ export interface OverviewFieldUpdate {
     primaryCountry?: string;
     lastName?: string;
     firstName?: string;
+}
+export interface AuthorizationResult {
+    status: AuthorizationStatus;
+    message: string;
+}
+export interface AdminEntry {
+    principal: Principal;
+    name: string;
+    role: AdminRole;
+    addedOn: Time;
+}
+export interface ActivityLogEntry {
+    oldValue: string;
+    user: string;
+    newValue: string;
+    timestamp: Time;
+    fieldName: string;
 }
 export interface KYCEntry {
     result: string;
@@ -93,10 +108,14 @@ export interface OnboardingStage {
     cards: Array<OnboardingCard>;
     stageName: string;
 }
-export interface UserProfile {
-    name: string;
-    role: string;
-    email: string;
+export enum AdminRole {
+    operator = "operator",
+    staff = "staff"
+}
+export enum AuthorizationStatus {
+    authorized = "authorized",
+    operatorMissing = "operatorMissing",
+    unauthorized = "unauthorized"
 }
 export enum ClientStatus {
     active = "active",
@@ -119,11 +138,16 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    addAdmin(principal: Principal, name: string, role: AdminRole): Promise<boolean>;
     appendActivityLogEntries(clientId: bigint, entries: Array<ActivityLogEntry>): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createClient(profile: ClientProfile): Promise<bigint>;
     deleteClient(id: bigint): Promise<void>;
+    getAdminEntries(): Promise<Array<AdminEntry>>;
+    getAdminEntry(principal: Principal): Promise<AdminEntry>;
     getAllClients(): Promise<Array<ClientProfile>>;
+    getAllowlistSize(): Promise<bigint>;
+    getCallerAdminEntry(): Promise<AdminEntry | null>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getClient(id: bigint): Promise<ClientProfile>;
@@ -131,8 +155,10 @@ export interface backendInterface {
     getDashboardStats(): Promise<DashboardStats>;
     getOnboardingPipeline(): Promise<Array<OnboardingStage>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    isAuthorized(): Promise<AuthorizationResult>;
     isCallerAdmin(): Promise<boolean>;
     moveClientToStage(clientId: bigint, stepNumber: bigint, status: string, assignedPerson: string, dueDate: Time | null): Promise<void>;
+    removeAdmin(principal: Principal): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateClient(id: bigint, updatedProfile: ClientProfile): Promise<void>;
     updateClientOverviewFields(id: bigint, updates: OverviewFieldUpdate): Promise<void>;

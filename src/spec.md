@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Replace the current PDF export implementation with a simple popup-window print flow (no jsPDF/html2canvas) and ensure Export PDF uses a properly constructed filename.
+**Goal:** Ensure the Settings > Admin Management page correctly detects the Operator by Principal ID so the Add Staff form and Remove controls render only for the Operator.
 
 **Planned changes:**
-- Update `frontend/src/utils/pdfDownload.ts` so `downloadPDF(htmlContent, filename)` opens a blank popup window, writes `htmlContent` via `document.write`, sets `document.title` to `filename`, triggers `print()`, and closes the popup after printing (with an `afterprint`-based close and a safe fallback).
-- Remove any jsPDF/html2canvas usage, dynamic CDN loading, and Blob/objectURL download logic from `downloadPDF()`.
-- Update `frontend/src/pages/ClientDetailPage.tsx` so Export PDF builds a filename from `client.firstName`, `client.lastName`, `client.accountId`, and today’s date, then calls `downloadPDF(pdfHtml, filename)` while keeping `generateClientPDF(client, mockDetailData)` unchanged.
+- Update `frontend/src/components/settings/AdminManagementSection.tsx` to compute `isOperator` by comparing the logged-in user’s Principal ID to the Principal ID of the `Operator` row returned by `useGetAdminEntries()` (with `useGetMyAdminEntry()` only as an optional fallback if needed).
+- Render the Add Staff form directly below the admin entries table (Principal ID input, Display Name input, “Add Staff” button) with English labels and validation, and wire submission to the existing add-admin mutation with role `Staff`.
+- After successful Add Staff, refresh the admin entries table so the new Staff entry appears without manual reload.
+- Enforce Remove button rules: only show Remove controls for non-Operator rows when the logged-in user is the Operator; never show a Remove button on the Operator row; hide Remove column/buttons entirely when the user is not the Operator.
 
-**User-visible outcome:** When a user exports a client PDF, a print dialog opens from a popup containing the generated HTML, titled with a filename based on the client and today’s date; if popups are blocked, the export fails gracefully with a clear English message.
+**User-visible outcome:** Operators can see and use an Add Staff form under the admin table to add Staff by Principal ID and Display Name, see the table update immediately after adding, and manage Staff removals; non-Operators see an Operator-only message and no Remove controls.

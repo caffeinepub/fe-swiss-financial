@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { ClientProfile, DashboardStats, UserProfile, OnboardingStage, OverviewFieldUpdate, ActivityLogEntry } from '../backend';
+import type { ClientProfile, DashboardStats, UserProfile, OnboardingStage, OverviewFieldUpdate, ActivityLogEntry, AuthorizationResult, AdminEntry, AdminRole } from '../backend';
+import type { Principal } from '@icp-sdk/core/principal';
 
 // User Profile Queries
 export function useGetCallerUserProfile() {
@@ -34,6 +35,96 @@ export function useSaveCallerUserProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+    },
+  });
+}
+
+// Authorization Queries
+export function useGetAuthorizationStatus() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  const query = useQuery<AuthorizationResult>({
+    queryKey: ['authorizationStatus'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.isAuthorized();
+    },
+    enabled: !!actor && !actorFetching,
+    retry: false,
+  });
+
+  return {
+    ...query,
+    isLoading: actorFetching || query.isLoading,
+    isFetched: !!actor && query.isFetched,
+  };
+}
+
+export function useGetMyAdminEntry() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  const query = useQuery<AdminEntry | null>({
+    queryKey: ['myAdminEntry'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getCallerAdminEntry();
+    },
+    enabled: !!actor && !actorFetching,
+    retry: false,
+  });
+
+  return {
+    ...query,
+    isLoading: actorFetching || query.isLoading,
+    isFetched: !!actor && query.isFetched,
+  };
+}
+
+export function useGetAdminEntries() {
+  const { actor, isFetching } = useActor();
+  const queryClient = useQueryClient();
+
+  return useQuery<AdminEntry[]>({
+    queryKey: ['adminEntries'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      const entries = await actor.getAdminEntries();
+      // After fetching admin entries, invalidate myAdminEntry to ensure it's up to date
+      queryClient.invalidateQueries({ queryKey: ['myAdminEntry'] });
+      return entries;
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAddAdmin() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ principal, name, role }: { principal: Principal; name: string; role: AdminRole }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.addAdmin(principal, name, role);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminEntries'] });
+      queryClient.invalidateQueries({ queryKey: ['myAdminEntry'] });
+    },
+  });
+}
+
+export function useRemoveAdmin() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (principal: Principal) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.removeAdmin(principal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminEntries'] });
+      queryClient.invalidateQueries({ queryKey: ['myAdminEntry'] });
     },
   });
 }

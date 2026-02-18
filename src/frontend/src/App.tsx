@@ -2,6 +2,7 @@ import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } fr
 import { useInternetIdentity } from './hooks/useInternetIdentity';
 import AppLayout from './components/AppLayout';
 import AuthGate from './components/AuthGate';
+import AuthorizationGate from './components/AuthorizationGate';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
 import DashboardPage from './pages/DashboardPage';
 import ClientsPage from './pages/ClientsPage';
@@ -21,10 +22,10 @@ function RootComponent() {
   }
 
   return (
-    <>
+    <AuthorizationGate>
       <ProfileSetupDialog />
       <AppLayout />
-    </>
+    </AuthorizationGate>
   );
 }
 

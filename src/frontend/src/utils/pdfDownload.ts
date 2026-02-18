@@ -16,42 +16,78 @@ export function formatDateForFilename(date: Date): string {
 
 export function downloadPDF(htmlContent: string, filename: string): void {
   try {
-    // Open a new blank popup window
-    const popupWindow = window.open('', '_blank', 'width=800,height=600');
+    // Parse the HTML to inject title and auto-print script
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
     
-    if (!popupWindow) {
-      console.error('Failed to open popup window. Please allow popups for this site.');
+    // Inject or update the title tag in the head
+    let titleElement = doc.querySelector('title');
+    if (!titleElement) {
+      titleElement = doc.createElement('title');
+      const head = doc.querySelector('head');
+      if (head) {
+        head.appendChild(titleElement);
+      } else {
+        // Create head if it doesn't exist
+        const newHead = doc.createElement('head');
+        newHead.appendChild(titleElement);
+        doc.documentElement.insertBefore(newHead, doc.body);
+      }
+    }
+    titleElement.textContent = filename;
+    
+    // Add auto-print script at the end of body
+    const script = doc.createElement('script');
+    script.textContent = `
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          window.print();
+          // Attempt to close after printing
+          window.addEventListener('afterprint', function() {
+            window.close();
+          });
+        }, 250);
+      });
+    `;
+    
+    const body = doc.querySelector('body');
+    if (body) {
+      body.appendChild(script);
+    }
+    
+    // Serialize the modified HTML
+    const finalHtml = new XMLSerializer().serializeToString(doc);
+    
+    // Create Blob from HTML content
+    const blob = new Blob([finalHtml], { type: 'text/html' });
+    
+    // Create Blob URL
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Open in new tab
+    const newWindow = window.open(blobUrl, '_blank');
+    
+    if (!newWindow) {
+      // Popup was blocked
       alert('Failed to open print window. Please allow popups for this site and try again.');
+      URL.revokeObjectURL(blobUrl);
       return;
     }
-
-    // Write the HTML content into the popup window
-    popupWindow.document.write(htmlContent);
-    popupWindow.document.close();
-
-    // Set the document title to control the suggested PDF filename
-    popupWindow.document.title = filename;
-
-    // Wait for content to load, then trigger print
-    popupWindow.onload = () => {
-      // Small delay to ensure rendering is complete
+    
+    // Revoke the Blob URL after the window has loaded to prevent memory leaks
+    // Use a timeout as a fallback in case the load event doesn't fire
+    const revokeTimeout = setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+    }, 5000);
+    
+    // Try to revoke earlier if we can detect the window loaded
+    newWindow.addEventListener('load', () => {
+      clearTimeout(revokeTimeout);
       setTimeout(() => {
-        popupWindow.print();
-      }, 250);
-    };
-
-    // Close popup after printing (with fallback timer)
-    popupWindow.onafterprint = () => {
-      popupWindow.close();
-    };
-
-    // Fallback: close after 60 seconds if user doesn't complete print dialog
-    setTimeout(() => {
-      if (popupWindow && !popupWindow.closed) {
-        popupWindow.close();
-      }
-    }, 60000);
-
+        URL.revokeObjectURL(blobUrl);
+      }, 1000);
+    });
+    
   } catch (error) {
     console.error('PDF download error:', error);
     alert('Failed to generate PDF. Please try again.');
