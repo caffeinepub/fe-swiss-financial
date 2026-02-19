@@ -1,29 +1,41 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-19T08:13:34.641Z",
+  "generatedAt": "2026-02-19T13:07:57.726Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 5,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Revert all code to Version 29 state, which had working admin bootstrap, sidebar user info (name and 'User' badge), admin table showing first caller as 'Admin' role with 'System Administrator' name, Add Staff form visible for Admin, and footer displaying 'v29'",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/AppLayout.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/AppLayout.tsx"
-        ]
+        "summary": "Remove the bootstrapAdmin function entirely from backend/main.mo",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "In AppLayout.tsx sidebar user info section, replace the hardcoded 'User' badge with dynamic role display by calling useGetMyAdminEntry() with enabled: !!identity. If adminEntry exists, display the role from adminEntry (e.g. 'Admin'). If adminEntry is null or undefined (still loading or user is not an admin), fall back to displaying 'User'",
+        "summary": "Add hardcoded admin initialization code in backend/main.mo immediately after 'include MixinAuthorization(accessControlState);' that checks if principal 'grzx7-efvee-eiav7-cphgh-j7zbs-jju44-7e5zt-embnv-eki5c-gmoof-uqe' exists as admin in accessControlState, and if not, directly adds them with name 'System Administrator' and role 'Admin' to the same data structure that getAdminEntries reads from",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Remove the useBootstrapAdmin hook from the frontend",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/hooks/useBootstrapAdmin.ts"
+        ],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Remove bootstrap logic from frontend/src/components/AppLayout.tsx while keeping the sidebar and all UI exactly as v41",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/AppLayout.tsx"
@@ -33,8 +45,8 @@
         ]
       },
       {
-        "id": "REQ-3",
-        "summary": "Update the version number in the footer from 'v29' to 'v31'",
+        "id": "REQ-5",
+        "summary": "Update the version number displayed in the AppLayout footer from 'v41' to 'v42'",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/AppLayout.tsx"
@@ -47,11 +59,16 @@
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
     "frontend/src/components/AppLayout.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",

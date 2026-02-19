@@ -142,7 +142,7 @@ export default function AppLayout() {
               </a>
             </div>
             <span className="hidden sm:inline">•</span>
-            <span className="text-gray-500">v31</span>
+            <span className="text-gray-500">v42</span>
           </div>
         </footer>
       </SidebarInset>

@@ -1,53 +1,53 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Revert to v29 and update sidebar role display logic",
+  "title": "Permanent hardcoded admin initialization fix - Frontend changes",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Revert all code to Version 29 state with working admin bootstrap, sidebar user info, admin table, and footer displaying 'v29'",
-      "acceptanceCriteria": [
-        "Admin table shows the first caller as 'Admin' role with 'System Administrator' name",
-        "Add Staff form is visible for the Admin user",
-        "Sidebar displays user name and role badge above Logout button",
-        "All features from v29 are working: Edit Client, Activity Log, Export PDF, clients list, Dashboard, Onboarding, KYC Screening, Reports, Complete Your Profile modal"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/AppLayout.tsx",
-          "operation": "modify",
-          "description": "Revert AppLayout.tsx to v29 state which includes the sidebar user info section displaying user name from getCallerUserProfile and a hardcoded 'User' badge above the Logout button. Ensure the footer displays 'v29' at this stage. This file contained the working sidebar structure that will be enhanced in REQ-2."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Replace hardcoded 'User' badge in AppLayout.tsx sidebar with dynamic role display using useGetMyAdminEntry() hook with enabled: !!identity",
-      "acceptanceCriteria": [
-        "useGetMyAdminEntry() is called with { enabled: !!identity } to prevent premature queries",
-        "When adminEntry exists, the sidebar displays the role from adminEntry.role (e.g., 'Admin' or 'Staff')",
-        "When adminEntry is null or undefined, the sidebar displays 'User' as fallback",
-        "User name displays userProfile?.name directly without any extra characters appended"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/AppLayout.tsx",
-          "operation": "modify",
-          "description": "In the sidebar user info section of AppLayout.tsx, call useGetMyAdminEntry() hook with { enabled: !!identity } configuration to prevent queries before the identity/actor is ready. Replace the hardcoded 'User' badge with conditional logic: if adminEntry exists and has a role property, display that role value (e.g., 'Admin' or 'Staff'); otherwise, fall back to displaying 'User'. Ensure userProfile?.name is displayed directly in the user name area without appending extra characters. The authorization component's useGetMyAdminEntry hook must be used to fetch the current user's admin entry from the backend."
-        }
-      ]
-    },
-    {
       "id": "REQ-3",
-      "summary": "Update footer version number from 'v29' to 'v31'",
+      "summary": "Remove the useBootstrapAdmin hook from the frontend",
       "acceptanceCriteria": [
-        "Footer displays 'v31' instead of 'v29'"
+        "The useBootstrapAdmin hook file or export no longer exists",
+        "No references to useBootstrapAdmin remain in the codebase"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useBootstrapAdmin.ts",
+          "operation": "delete",
+          "description": "Delete the useBootstrapAdmin hook file entirely since bootstrap logic is being moved to automatic backend initialization"
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Remove bootstrap logic from AppLayout.tsx while keeping the sidebar and all UI exactly as v41",
+      "acceptanceCriteria": [
+        "No bootstrap-related code or useBootstrapAdmin calls exist in AppLayout.tsx",
+        "Sidebar navigation remains unchanged from v41",
+        "User profile display with dynamic role badge remains unchanged",
+        "Logout functionality remains unchanged",
+        "Layout and UI structure match v41 exactly"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/AppLayout.tsx",
           "operation": "modify",
-          "description": "In the footer section of AppLayout.tsx, update the version number text from 'v29' to 'v31'. This is a simple string replacement in the footer display area."
+          "description": "Remove the useBootstrapAdmin import and all bootstrap-related logic including the automatic bootstrapAdmin() call that executes when an authenticated user has no admin entry. Keep all existing UI elements unchanged: sidebar navigation, user profile display with dynamic role badge (Admin/Staff/User), logout functionality, and layout structure. The component should continue to fetch and display the user's admin entry via useGetMyAdminEntry but without any bootstrap fallback logic."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Update the version number displayed in the AppLayout footer from 'v41' to 'v42'",
+      "acceptanceCriteria": [
+        "Footer displays 'v42' instead of 'v41'",
+        "Version string is visible in the AppLayout component"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AppLayout.tsx",
+          "operation": "modify",
+          "description": "Update the version string in the footer from 'v41' to 'v42' to reflect the new release version"
         }
       ]
     }

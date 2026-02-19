@@ -2,38 +2,57 @@
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
   "summary": "New project",
-  "architectural_notes": [],
-  "known_issues": [
-    "Version 30 broke admin bootstrap and removed sidebar user info; reverted to v29 base"
+  "architectural_notes": [
+    "Admin principal grzx7-efvee-eiav7-cphgh-j7zbs-jju44-7e5zt-embnv-eki5c-gmoof-uqe is hardcoded in main.mo initialization to prevent phantom admin issues during deployment",
+    "Admin initialization runs automatically during canister deployment/upgrade, not as a callable function",
+    "Removed bootstrapAdmin function and useBootstrapAdmin hook in favor of hardcoded initialization"
   ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-revert-all-code-to-version-29-state-which-had-working-admin-bootstrap-sidebar-user-info-name-and-user-badge-admin-table-showing-first-caller-as-admin-role-with-system-administrator-name-add-staff-form-visible-for-admin-and-footer-displaying-v29",
-      "title": "Revert all code to Version 29 state, which had working admin bootstrap, sidebar user info (name and 'User' badge), admin table showing first caller as 'Admin' role with 'System Administrator' name, Add Staff form visible for Admin, and footer displaying 'v29'",
+      "id": "feature-remove-bootstrap-logic-from-frontend-src-components-applayout-tsx-while-keeping-the-sidebar-and-all-ui-exactly-as-v41",
+      "title": "Remove bootstrap logic from frontend/src/components/AppLayout.tsx while keeping the sidebar and all UI exactly as v41",
       "reqIds": [
-        "REQ-1"
+        "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-in-applayout-tsx-sidebar-user-info-section-replace-the-hardcoded-user-badge-with-dynamic-role-display-by-calling-usegetmyadminentry-with-enabled-identity-if-adminentry-exists-display-the-role-from-adminentry-e-g-admin-if-adminentry-is-null-or-undefined-still-loading-or-user-is-not-an-admin-fall-back-to-displaying-user",
-      "title": "In AppLayout.tsx sidebar user info section, replace the hardcoded 'User' badge with dynamic role display by calling useGetMyAdminEntry() with enabled: !!identity. If adminEntry exists, display the role from adminEntry (e.g. 'Admin'). If adminEntry is null or undefined (still loading or user is not an admin), fall back to displaying 'User'",
+      "id": "feature-update-the-version-number-displayed-in-the-applayout-footer-from-v41-to-v42",
+      "title": "Update the version number displayed in the AppLayout footer from 'v41' to 'v42'",
       "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-version-number-in-the-footer-from-v29-to-v31",
-      "title": "Update the version number in the footer from 'v29' to 'v31'",
-      "reqIds": [
-        "REQ-3"
+        "REQ-5"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Remove the bootstrapAdmin function entirely from backend/main.mo",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Add hardcoded admin initialization code in backend/main.mo immediately after 'include MixinAuthorization(accessControlState);' that checks if principal 'grzx7-efvee-eiav7-cphgh-j7zbs-jju44-7e5zt-embnv-eki5c-gmoof-uqe' exists as admin in accessControlState, and if not, directly adds them with name 'System Administrator' and role 'Admin' to the same data structure that getAdminEntries reads from",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Remove the useBootstrapAdmin hook from the frontend",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    }
+  ],
   "projectName": "FE Swiss Financial",
   "clarification_mode": "instant",
   "clarification_rounds": 0

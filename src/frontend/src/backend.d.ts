@@ -146,14 +146,14 @@ export interface backendInterface {
     getAdminEntries(): Promise<Array<AdminEntry>>;
     getAdminEntry(principal: Principal): Promise<AdminEntry>;
     getAdminList(): Promise<Array<AdminEntry>>;
+    getAdminListSize(): Promise<bigint>;
     getAllClients(): Promise<Array<ClientProfile>>;
-    getAllowlistSize(): Promise<bigint>;
-    getCallerAdminEntry(): Promise<AdminEntry | null>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getClient(id: bigint): Promise<ClientProfile>;
     getClientActivityLog(clientId: bigint): Promise<Array<string>>;
     getDashboardStats(): Promise<DashboardStats>;
+    getMyAdminEntry(): Promise<AdminEntry | null>;
     getOnboardingPipeline(): Promise<Array<OnboardingStage>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isAuthorized(): Promise<AuthorizationResult>;

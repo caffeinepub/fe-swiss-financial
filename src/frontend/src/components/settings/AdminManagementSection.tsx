@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useGetAdminEntries, useAddAdmin, useRemoveAdmin, useGetMyAdminEntry } from '../../hooks/useQueries';
-import { useInternetIdentity } from '../../hooks/useInternetIdentity';
+import { useGetMyAdminEntry, useAddAdmin, useRemoveAdmin } from '../../hooks/useQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -13,9 +12,7 @@ import { AdminRole } from '../../backend';
 import { Principal } from '@icp-sdk/core/principal';
 
 export default function AdminManagementSection() {
-  const { identity } = useInternetIdentity();
-  const { data: adminEntries, isLoading: entriesLoading } = useGetAdminEntries();
-  const { data: myAdminEntry, isLoading: myEntryLoading, isFetched: myEntryFetched } = useGetMyAdminEntry();
+  const { data: myAdminEntry, isLoading: myEntryLoading } = useGetMyAdminEntry();
   const addAdminMutation = useAddAdmin();
   const removeAdminMutation = useRemoveAdmin();
 
@@ -23,22 +20,8 @@ export default function AdminManagementSection() {
   const [newDisplayName, setNewDisplayName] = useState('');
   const [formError, setFormError] = useState('');
 
-  // Determine if current user is Admin by comparing Principal IDs
-  const currentPrincipalId = identity?.getPrincipal().toString();
-  
-  // Primary method: Find Admin in adminEntries and compare with current Principal ID
-  let isAdmin = false;
-  if (adminEntries && currentPrincipalId) {
-    const adminEntry = adminEntries.find(entry => entry.role === AdminRole.operator);
-    if (adminEntry) {
-      isAdmin = adminEntry.principal.toString() === currentPrincipalId;
-    }
-  }
-  
-  // Fallback: Use myAdminEntry if adminEntries is not available yet
-  if (!adminEntries && myAdminEntry) {
-    isAdmin = myAdminEntry.role === AdminRole.operator;
-  }
+  const isAdmin = myAdminEntry?.role === AdminRole.operator;
+  const isLoading = myEntryLoading;
 
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,8 +64,6 @@ export default function AdminManagementSection() {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  const isLoading = entriesLoading || (myEntryLoading && !myEntryFetched);
-
   return (
     <div className="space-y-6">
       <Card>
@@ -93,126 +74,118 @@ export default function AdminManagementSection() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Admin List Table */}
-          <div>
-            <h3 className="mb-3 text-sm font-medium">Authorized Admins</h3>
-            {entriesLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : adminEntries && adminEntries.length > 0 ? (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Principal ID</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Date Added</TableHead>
-                      {isAdmin && <TableHead className="w-[100px]">Remove</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {adminEntries.map((entry) => {
-                      const principalText = entry.principal.toString();
-                      const isAdminEntry = entry.role === AdminRole.operator;
-                      return (
-                        <TableRow key={principalText}>
-                          <TableCell className="font-mono text-xs">{principalText}</TableCell>
-                          <TableCell>{entry.name}</TableCell>
-                          <TableCell>
-                            <Badge variant={isAdminEntry ? 'default' : 'secondary'}>
-                              {isAdminEntry ? 'Admin' : 'Staff'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{formatDate(entry.addedOn)}</TableCell>
-                          {isAdmin && (
-                            <TableCell>
-                              {!isAdminEntry && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemove(principalText)}
-                                  disabled={removeAdminMutation.isPending}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              )}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>No admin entries found.</AlertDescription>
-              </Alert>
-            )}
-          </div>
-
-          {/* Add Staff Form - Only visible to Admin */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : isAdmin ? (
-            <div>
-              <h3 className="mb-3 text-sm font-medium">Add Staff Member</h3>
-              <form onSubmit={handleAddStaff} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="principalId">Principal ID</Label>
-                    <Input
-                      id="principalId"
-                      placeholder="xxxxx-xxxxx-xxxxx-xxxxx-xxx"
-                      value={newPrincipalId}
-                      onChange={(e) => setNewPrincipalId(e.target.value)}
-                      disabled={addAdminMutation.isPending}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="displayName">Display Name</Label>
-                    <Input
-                      id="displayName"
-                      placeholder="John Doe"
-                      value={newDisplayName}
-                      onChange={(e) => setNewDisplayName(e.target.value)}
-                      disabled={addAdminMutation.isPending}
-                    />
-                  </div>
-                </div>
-                {formError && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{formError}</AlertDescription>
-                  </Alert>
-                )}
-                <Button type="submit" disabled={addAdminMutation.isPending}>
-                  {addAdminMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Adding...
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Add Staff
-                    </>
-                  )}
-                </Button>
-              </form>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Only the Admin can add or remove admin entries.
-              </AlertDescription>
-            </Alert>
+            <>
+              <div>
+                <h3 className="mb-3 text-sm font-medium">Current Admins</h3>
+                {!myAdminEntry ? (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>No admin entries found.</AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Principal ID</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Added On</TableHead>
+                          <TableHead className="w-[100px]">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-mono text-xs">{myAdminEntry.principal.toString()}</TableCell>
+                          <TableCell>{myAdminEntry.name}</TableCell>
+                          <TableCell>
+                            <Badge variant={myAdminEntry.role === AdminRole.operator ? 'default' : 'secondary'}>
+                              {myAdminEntry.role === AdminRole.operator ? 'Admin' : 'Staff'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{formatDate(myAdminEntry.addedOn)}</TableCell>
+                          <TableCell>
+                            {myAdminEntry.role !== AdminRole.operator && isAdmin && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemove(myAdminEntry.principal.toString())}
+                                disabled={removeAdminMutation.isPending}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+
+              {isAdmin && (
+                <div>
+                  <h3 className="mb-3 text-sm font-medium">Add Staff Member</h3>
+                  <form onSubmit={handleAddStaff} className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="principalId">Principal ID</Label>
+                        <Input
+                          id="principalId"
+                          placeholder="Enter Principal ID"
+                          value={newPrincipalId}
+                          onChange={(e) => setNewPrincipalId(e.target.value)}
+                          disabled={addAdminMutation.isPending}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="displayName">Display Name</Label>
+                        <Input
+                          id="displayName"
+                          placeholder="Enter display name"
+                          value={newDisplayName}
+                          onChange={(e) => setNewDisplayName(e.target.value)}
+                          disabled={addAdminMutation.isPending}
+                        />
+                      </div>
+                    </div>
+                    {formError && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{formError}</AlertDescription>
+                      </Alert>
+                    )}
+                    <Button type="submit" disabled={addAdminMutation.isPending}>
+                      {addAdminMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Add Staff
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </div>
+              )}
+
+              {!isAdmin && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    You do not have permission to add or remove admins. Only the Admin can perform these actions.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

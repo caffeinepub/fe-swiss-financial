@@ -1,78 +1,115 @@
 {
   "kind": "build_request",
-  "title": "Revert to v29 and update sidebar role display logic",
+  "title": "Permanent hardcoded admin initialization fix",
   "projectName": "FE Swiss Financial",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Revert all code to Version 29 state, which had working admin bootstrap, sidebar user info (name and 'User' badge), admin table showing first caller as 'Admin' role with 'System Administrator' name, Add Staff form visible for Admin, and footer displaying 'v29'",
-      "target": "both",
+      "text": "Remove the bootstrapAdmin function entirely from backend/main.mo",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-last"
         ],
         "quotes": [
-          "Version 30 broke the admin bootstrap and removed the sidebar user info. Version 29 was working correctly"
+          "REMOVE the bootstrapAdmin function entirely"
         ]
       },
       "acceptanceCriteria": [
-        "Admin table shows the first caller as 'Admin' role with 'System Administrator' name",
-        "Add Staff form is visible for the Admin user",
-        "Sidebar displays user name and role badge above Logout button",
-        "All features from v29 are working: Edit Client, Activity Log, Export PDF, clients list, Dashboard, Onboarding, KYC Screening, Reports, Complete Your Profile modal"
+        "The bootstrapAdmin function no longer exists in main.mo",
+        "No callable function for bootstrap logic remains"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In AppLayout.tsx sidebar user info section, replace the hardcoded 'User' badge with dynamic role display by calling useGetMyAdminEntry() with enabled: !!identity. If adminEntry exists, display the role from adminEntry (e.g. 'Admin'). If adminEntry is null or undefined (still loading or user is not an admin), fall back to displaying 'User'",
-      "target": "frontend",
+      "text": "Add hardcoded admin initialization code in backend/main.mo immediately after 'include MixinAuthorization(accessControlState);' that checks if principal 'grzx7-efvee-eiav7-cphgh-j7zbs-jju44-7e5zt-embnv-eki5c-gmoof-uqe' exists as admin in accessControlState, and if not, directly adds them with name 'System Administrator' and role 'Admin' to the same data structure that getAdminEntries reads from",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-last"
         ],
         "quotes": [
-          "check if the user has an admin entry using useGetMyAdminEntry(). But CRITICALLY: this hook must have enabled: false until the identity/actor is ready",
-          "If adminEntry exists, display the role from adminEntry (e.g. 'Admin'). If adminEntry is null/undefined (still loading or user is not an admin), fall back to showing 'User'"
+          "add initialization code that runs when the canister starts",
+          "Check if principal \"grzx7-efvee-eiav7-cphgh-j7zbs-jju44-7e5zt-embnv-eki5c-gmoof-uqe\" has an admin entry",
+          "add this principal as admin with name \"System Administrator\" and role \"Admin\" directly into the same data structure that getAdminEntries reads from"
         ]
       },
       "acceptanceCriteria": [
-        "useGetMyAdminEntry() is called with { enabled: !!identity } to prevent premature queries",
-        "When adminEntry exists, the sidebar displays the role from adminEntry.role (e.g., 'Admin' or 'Staff')",
-        "When adminEntry is null or undefined, the sidebar displays 'User' as fallback",
-        "User name displays userProfile?.name directly without any extra characters appended"
+        "Initialization code runs automatically during canister deployment and upgrade",
+        "Code checks for the specific principal in accessControlState",
+        "If principal not found, it is added directly to accessControlState with the specified name and role",
+        "The initialization executes before any function calls can be made to the canister",
+        "getAdminEntries will return this hardcoded admin after initialization"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Update the version number in the footer from 'v29' to 'v31'",
+      "text": "Remove the useBootstrapAdmin hook from the frontend",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-last"
         ],
         "quotes": [
-          "The version in the footer should be updated to 'v31'"
+          "REMOVE the useBootstrapAdmin hook"
         ]
       },
       "acceptanceCriteria": [
-        "Footer displays 'v31' instead of 'v29'"
+        "The useBootstrapAdmin hook file or export no longer exists",
+        "No references to useBootstrapAdmin remain in the codebase"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Remove bootstrap logic from frontend/src/components/AppLayout.tsx while keeping the sidebar and all UI exactly as v41",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "REMOVE the bootstrap logic from AppLayout.tsx",
+          "Keep sidebar and all UI exactly as v41"
+        ]
+      },
+      "acceptanceCriteria": [
+        "No bootstrap-related code or useBootstrapAdmin calls exist in AppLayout.tsx",
+        "Sidebar navigation remains unchanged from v41",
+        "User profile display with dynamic role badge remains unchanged",
+        "Logout functionality remains unchanged",
+        "Layout and UI structure match v41 exactly"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Update the version number displayed in the AppLayout footer from 'v41' to 'v42'",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "Update version to v42"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Footer displays 'v42' instead of 'v41'",
+        "Version string is visible in the AppLayout component"
       ]
     }
   ],
   "constraints": [
-    "Do NOT change the backend at all",
-    "Do NOT change AdminManagementSection.tsx",
-    "Do NOT change the admin bootstrap logic",
-    "Do NOT change Edit Client, Activity Log, Export PDF, clients list, Dashboard, Onboarding, KYC Screening, Reports, or Complete Your Profile modal",
-    "The ONLY frontend file that should change from v29 is AppLayout.tsx (sidebar user info role display) and the footer version number"
+    "The hardcoded principal must be exactly 'grzx7-efvee-eiav7-cphgh-j7zbs-jju44-7e5zt-embnv-eki5c-gmoof-uqe'",
+    "Initialization must run automatically during canister startup, not as a callable function",
+    "Frontend must continue using getMyAdminEntry normally without any bootstrap calls",
+    "All v41 UI and sidebar functionality must remain unchanged except for bootstrap removal and version update"
   ],
   "nonGoals": [
-    "Adding new features beyond the specified role display logic",
-    "Modifying any backend logic or data structures",
-    "Changing authentication or authorization flows",
-    "Altering admin management functionality",
-    "Updating any UI components other than AppLayout.tsx"
+    "Adding new admin management features",
+    "Changing the admin data structure or schema",
+    "Modifying any UI beyond bootstrap removal and version update",
+    "Adding configuration options for the hardcoded admin principal"
   ],
   "imageRequirements": {
     "required": [],

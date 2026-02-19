@@ -1,12 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Revert to Version 29 functionality and add dynamic role display in the sidebar based on admin entry status.
+**Goal:** Replace the callable bootstrap admin function with automatic hardcoded admin initialization that runs on canister startup.
 
 **Planned changes:**
-- Restore all Version 29 working features (admin bootstrap, sidebar user info, admin table showing first caller as 'Admin' role with 'System Administrator' name, Add Staff form visibility)
-- Update sidebar user info in AppLayout.tsx to dynamically display role by calling useGetMyAdminEntry() with enabled: !!identity
-- Display role from adminEntry when it exists (e.g., 'Admin' or 'Staff'), otherwise fall back to 'User'
-- Update footer version number from 'v29' to 'v31'
+- Remove the bootstrapAdmin callable function from backend
+- Add hardcoded initialization code in backend that automatically creates admin principal 'grzx7-efvee-eiav7-cphgh-j7zbs-jju44-7e5zt-embnv-eki5c-gmoof-uqe' with name 'System Administrator' and role 'Admin' on canister startup
+- Remove useBootstrapAdmin hook from frontend
+- Remove bootstrap logic from AppLayout.tsx while keeping all UI unchanged
+- Update version number from v41 to v42 in footer
 
-**User-visible outcome:** Admin users will see their actual role ('Admin' or 'Staff') displayed in the sidebar, while non-admin users will see 'User'. All Version 29 features remain functional, including admin bootstrap, client management, activity logs, KYC screening, and reports.
+**User-visible outcome:** The system administrator is automatically initialized when the canister deploys, eliminating the need for manual bootstrap. The UI remains identical to v41 except for the version number update to v42.
