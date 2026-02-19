@@ -158,6 +158,7 @@ actor {
   var adminCreated = false;
   let adminAllowlist = Map.empty<Principal, AdminEntry>();
   var canisterDeployer : ?Principal = null;
+  var bootstrapCompleted = false;
 
   // Helper Functions
   func getClientOrTrap(id : Nat) : ClientProfile {
@@ -315,7 +316,7 @@ actor {
         };
 
         let stageIndex = if (step.stepNumber >= 1 and step.stepNumber <= 6) {
-          step.stepNumber - 1;
+          if (step.stepNumber == 1) { 0 } else { step.stepNumber - 1 };
         } else { 0 };
 
         if (stageIndex < 6) {
@@ -419,30 +420,31 @@ actor {
 
   // Admin Allowlist Functions
 
-  // Add admin method - bootstrap: deployer becomes operator, then only operator can add
+  // Add admin method - only operator can add staff
   public shared ({ caller }) func addAdmin(principal : Principal, name : Text, role : AdminRole) : async Bool {
-    // Bootstrap: first call must be from canister deployer
-    switch (canisterDeployer) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can add admin entries");
+    };
+    
+    // Check if caller is operator (only operators can add admins)
+    switch (adminAllowlist.get(caller)) {
       case (null) {
-        Runtime.trap("Canister deployer not initialized");
+        Runtime.trap("Unauthorized: Caller is not in admin allowlist");
       };
-      case (?deployer) {
-        if (caller != deployer) {
-          Runtime.trap("Unauthorized: Only canister deployer can create initial operator");
+      case (?callerEntry) {
+        if (callerEntry.role != #operator) {
+          Runtime.trap("Unauthorized: Only operators can add admin entries");
         };
-        // First admin must be operator
-        if (role != #operator) {
-          Runtime.trap("First admin must be an operator");
-        };
-        adminAllowlist.add(principal, {
-          principal;
-          name;
-          role = #operator;
-          addedOn = Time.now();
-        });
-        return true;
       };
     };
+
+    adminAllowlist.add(principal, {
+      principal;
+      name;
+      role;
+      addedOn = Time.now();
+    });
+    true;
   };
 
   // Remove admin (except operator)
@@ -450,6 +452,19 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can remove admin entries");
     };
+    
+    // Check if caller is operator
+    switch (adminAllowlist.get(caller)) {
+      case (null) {
+        Runtime.trap("Unauthorized: Caller is not in admin allowlist");
+      };
+      case (?callerEntry) {
+        if (callerEntry.role != #operator) {
+          Runtime.trap("Unauthorized: Only operators can remove admin entries");
+        };
+      };
+    };
+
     switch (adminAllowlist.get(principal)) {
       case (null) { Runtime.trap("Admin not found") };
       case (?admin) {
@@ -486,6 +501,29 @@ actor {
     adminAllowlist.get(caller);
   };
 
+  // Bootstrap admin list (first caller becomes admin if list is empty) - ONE TIME ONLY
+  public shared ({ caller }) func getAdminList() : async [AdminEntry] {
+    // Allow bootstrap only once and only if list is empty
+    if (not bootstrapCompleted and adminAllowlist.isEmpty()) {
+      let adminEntry = {
+        principal = caller;
+        name = "System Administrator";
+        role = #operator;
+        addedOn = Time.now();
+      };
+
+      adminAllowlist.add(caller, adminEntry);
+      bootstrapCompleted := true;
+      [adminEntry];
+    } else {
+      // After bootstrap, require admin permission to view list
+      if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+        Runtime.trap("Unauthorized: Only admins can view admin list");
+      };
+      adminAllowlist.values().toArray();
+    };
+  };
+
   // Check if caller is authorized
   public query ({ caller }) func isAuthorized() : async AuthorizationResult {
     if (adminAllowlist.isEmpty()) {
@@ -513,6 +551,9 @@ actor {
 
   // Get allowlist size
   public query ({ caller }) func getAllowlistSize() : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view allowlist size");
+    };
     adminAllowlist.size();
   };
 };

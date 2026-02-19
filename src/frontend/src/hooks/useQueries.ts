@@ -47,7 +47,7 @@ export function useGetAuthorizationStatus() {
   });
 }
 
-export function useGetMyAdminEntry() {
+export function useGetMyAdminEntry(options?: { enabled?: boolean }) {
   const { actor, isFetching } = useActor();
 
   return useQuery<AdminEntry | null>({
@@ -56,7 +56,7 @@ export function useGetMyAdminEntry() {
       if (!actor) return null;
       return actor.getCallerAdminEntry();
     },
-    enabled: !!actor && !isFetching,
+    enabled: options?.enabled !== undefined ? options.enabled && !!actor && !isFetching : !!actor && !isFetching,
   });
 }
 
@@ -68,7 +68,8 @@ export function useGetAdminEntries() {
     queryKey: ['adminEntries'],
     queryFn: async () => {
       if (!actor) return [];
-      const entries = await actor.getAdminEntries();
+      // Use getAdminList() which has bootstrap logic to auto-register first caller as Operator
+      const entries = await actor.getAdminList();
       // After fetching admin entries, invalidate myAdminEntry to ensure it's up to date
       queryClient.invalidateQueries({ queryKey: ['myAdminEntry'] });
       return entries;

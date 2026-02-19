@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { LayoutDashboard, Users, Workflow, ShieldCheck, FileBarChart, Settings, LogOut } from 'lucide-react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile } from '../hooks/useQueries';
+import { useGetCallerUserProfile, useGetMyAdminEntry } from '../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Sidebar,
@@ -23,9 +23,10 @@ import { Badge } from '@/components/ui/badge';
 export default function AppLayout() {
   const navigate = useNavigate();
   const routerState = useRouterState();
-  const { clear } = useInternetIdentity();
+  const { clear, identity } = useInternetIdentity();
   const queryClient = useQueryClient();
   const { data: userProfile } = useGetCallerUserProfile();
+  const { data: adminEntry } = useGetMyAdminEntry({ enabled: !!identity });
 
   const currentPath = routerState.location.pathname;
 
@@ -45,6 +46,11 @@ export default function AppLayout() {
   const settingsNavItems = [
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
+
+  // Determine the display role from admin entry
+  const displayRole = adminEntry 
+    ? (adminEntry.role === 'operator' ? 'Admin' : 'Staff')
+    : 'User';
 
   return (
     <SidebarProvider>
@@ -100,11 +106,9 @@ export default function AppLayout() {
             <>
               <div className="mb-3 px-2">
                 <p className="text-sm font-medium text-foreground">{userProfile.name}</p>
-                {userProfile.role && userProfile.role.trim() !== '' && (
-                  <Badge variant="secondary" className="mt-1 text-xs">
-                    {userProfile.role}
-                  </Badge>
-                )}
+                <Badge variant="secondary" className="mt-1 text-xs">
+                  {displayRole}
+                </Badge>
               </div>
               <SidebarSeparator className="mb-3" />
             </>
@@ -125,16 +129,20 @@ export default function AppLayout() {
           <Outlet />
         </main>
         <footer className="border-t border-border bg-background px-6 py-4">
-          <div className="flex items-center justify-center text-xs text-muted-foreground">
-            <span>© {new Date().getFullYear()} FE Swiss Financial. Built with love using </span>
-            <a
-              href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-1 underline hover:text-foreground"
-            >
-              caffeine.ai
-            </a>
+          <div className="flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground sm:flex-row sm:gap-2">
+            <div className="flex items-center">
+              <span>© {new Date().getFullYear()} FE Swiss Financial. Built with love using </span>
+              <a
+                href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-1 underline hover:text-foreground"
+              >
+                caffeine.ai
+              </a>
+            </div>
+            <span className="hidden sm:inline">•</span>
+            <span className="text-gray-500">v31</span>
           </div>
         </footer>
       </SidebarInset>

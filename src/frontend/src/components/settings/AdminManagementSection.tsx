@@ -23,21 +23,21 @@ export default function AdminManagementSection() {
   const [newDisplayName, setNewDisplayName] = useState('');
   const [formError, setFormError] = useState('');
 
-  // Determine if current user is Operator by comparing Principal IDs
+  // Determine if current user is Admin by comparing Principal IDs
   const currentPrincipalId = identity?.getPrincipal().toString();
   
-  // Primary method: Find Operator in adminEntries and compare with current Principal ID
-  let isOperator = false;
+  // Primary method: Find Admin in adminEntries and compare with current Principal ID
+  let isAdmin = false;
   if (adminEntries && currentPrincipalId) {
-    const operatorEntry = adminEntries.find(entry => entry.role === AdminRole.operator);
-    if (operatorEntry) {
-      isOperator = operatorEntry.principal.toString() === currentPrincipalId;
+    const adminEntry = adminEntries.find(entry => entry.role === AdminRole.operator);
+    if (adminEntry) {
+      isAdmin = adminEntry.principal.toString() === currentPrincipalId;
     }
   }
   
   // Fallback: Use myAdminEntry if adminEntries is not available yet
   if (!adminEntries && myAdminEntry) {
-    isOperator = myAdminEntry.role === AdminRole.operator;
+    isAdmin = myAdminEntry.role === AdminRole.operator;
   }
 
   const handleAddStaff = async (e: React.FormEvent) => {
@@ -89,7 +89,7 @@ export default function AdminManagementSection() {
         <CardHeader>
           <CardTitle>Admin Management</CardTitle>
           <CardDescription>
-            Manage authorized Principal IDs with access to the system. Only the Operator can add or remove admins.
+            Manage authorized Principal IDs with access to the system. Only the Admin can add or remove admins.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -109,26 +109,26 @@ export default function AdminManagementSection() {
                       <TableHead>Name</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Date Added</TableHead>
-                      {isOperator && <TableHead className="w-[100px]">Remove</TableHead>}
+                      {isAdmin && <TableHead className="w-[100px]">Remove</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {adminEntries.map((entry) => {
                       const principalText = entry.principal.toString();
-                      const isOperatorEntry = entry.role === AdminRole.operator;
+                      const isAdminEntry = entry.role === AdminRole.operator;
                       return (
                         <TableRow key={principalText}>
                           <TableCell className="font-mono text-xs">{principalText}</TableCell>
                           <TableCell>{entry.name}</TableCell>
                           <TableCell>
-                            <Badge variant={isOperatorEntry ? 'default' : 'secondary'}>
-                              {isOperatorEntry ? 'Operator' : 'Staff'}
+                            <Badge variant={isAdminEntry ? 'default' : 'secondary'}>
+                              {isAdminEntry ? 'Admin' : 'Staff'}
                             </Badge>
                           </TableCell>
                           <TableCell>{formatDate(entry.addedOn)}</TableCell>
-                          {isOperator && (
+                          {isAdmin && (
                             <TableCell>
-                              {!isOperatorEntry && (
+                              {!isAdminEntry && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -154,12 +154,12 @@ export default function AdminManagementSection() {
             )}
           </div>
 
-          {/* Add Staff Form - Only visible to Operator */}
+          {/* Add Staff Form - Only visible to Admin */}
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-          ) : isOperator ? (
+          ) : isAdmin ? (
             <div>
               <h3 className="mb-3 text-sm font-medium">Add Staff Member</h3>
               <form onSubmit={handleAddStaff} className="space-y-4">
@@ -210,7 +210,7 @@ export default function AdminManagementSection() {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Only the Operator can add or remove admin entries.
+                Only the Admin can add or remove admin entries.
               </AlertDescription>
             </Alert>
           )}

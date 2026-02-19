@@ -2,33 +2,39 @@
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
   "summary": "New project",
-  "architectural_notes": [
-    "Maintain ability to roll back app builds to a prior stable version (e.g., revert from v26 to v23) if a regression is introduced."
-  ],
+  "architectural_notes": [],
   "known_issues": [
-    "Regression in v26: layout behavior after authentication completes is not as expected; user requested rollback to v23."
+    "Version 30 broke admin bootstrap and removed sidebar user info; reverted to v29 base"
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-revert-the-application-frontend-and-backend-to-match-version-23-behavior-and-implementation-removing-regressing-any-changes-introduced-in-versions-24-26",
-      "title": "Revert the application (frontend and backend) to match Version 23 behavior and implementation, removing/regressing any changes introduced in Versions 24–26.",
+      "id": "feature-revert-all-code-to-version-29-state-which-had-working-admin-bootstrap-sidebar-user-info-name-and-user-badge-admin-table-showing-first-caller-as-admin-role-with-system-administrator-name-add-staff-form-visible-for-admin-and-footer-displaying-v29",
+      "title": "Revert all code to Version 29 state, which had working admin bootstrap, sidebar user info (name and 'User' badge), admin table showing first caller as 'Admin' role with 'System Administrator' name, Add Staff form visible for Admin, and footer displaying 'v29'",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-restore-the-version-23-authentication-authorization-layout-flow-so-that-after-internet-identity-login-completes-the-app-reliably-transitions-into-the-authorized-layout-without-hanging-on-or-regressing-the-verifying-authorization-stage",
-      "title": "Restore the Version 23 authentication/authorization + layout flow so that after Internet Identity login completes, the app reliably transitions into the authorized layout without hanging on or regressing the \"Verifying authorization...\" stage.",
+      "id": "feature-in-applayout-tsx-sidebar-user-info-section-replace-the-hardcoded-user-badge-with-dynamic-role-display-by-calling-usegetmyadminentry-with-enabled-identity-if-adminentry-exists-display-the-role-from-adminentry-e-g-admin-if-adminentry-is-null-or-undefined-still-loading-or-user-is-not-an-admin-fall-back-to-displaying-user",
+      "title": "In AppLayout.tsx sidebar user info section, replace the hardcoded 'User' badge with dynamic role display by calling useGetMyAdminEntry() with enabled: !!identity. If adminEntry exists, display the role from adminEntry (e.g. 'Admin'). If adminEntry is null or undefined (still loading or user is not an admin), fall back to displaying 'User'",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-version-number-in-the-footer-from-v29-to-v31",
+      "title": "Update the version number in the footer from 'v29' to 'v31'",
+      "reqIds": [
+        "REQ-3"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [],
-  "projectName": "Swiss Financial CRM",
+  "projectName": "FE Swiss Financial",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

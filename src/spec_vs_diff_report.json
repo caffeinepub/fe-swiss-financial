@@ -1,73 +1,35 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T14:06:53.536Z",
-  "summary": "Diff implements an auth/authorization gating flow (AuthGate + AuthorizationGate) with an English \"Verifying authorization...\" loading screen tied to fetch state, but the broader rollback-to-Version-23 requirement is not demonstrably satisfied from the provided changes and several unrelated/new behaviors appear to be introduced or retained.",
+  "generatedAt": "2026-02-19T08:13:34.638Z",
+  "summary": "The diff shows changes to backend/main.mo, frontend AppLayout.tsx, useQueries.ts hooks, frontend-file-summaries.txt, and project_state.json. REQ-1 (revert to v29) cannot be verified from the diff alone as it requires comparing against v29 baseline. REQ-2 (dynamic role display in sidebar) is implemented correctly. REQ-3 (footer version update to v31) is implemented. However, the backend was modified despite explicit constraint against backend changes.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Revert the application (frontend and backend) to match Version 23 behavior and implementation, removing/regressing any changes introduced in Versions 24–26.",
-      "reason": "The diff shows multiple feature-level implementations/behaviors (e.g., profile setup modal, admin management queries, IP address lookup, mock client behavior) but does not provide clear evidence that Version 24–26 changes were removed/regressed to match Version 23 end-to-end behavior.",
+      "requirement": "Revert all code to Version 29 state with working admin bootstrap, sidebar user info, admin table showing first caller as 'Admin' role with 'System Administrator' name, Add Staff form visible for Admin, and footer displaying 'v29'",
+      "reason": "The diff does not provide a v29 baseline for comparison. While frontend-file-summaries.txt mentions 'v31' in footer and AppLayout.tsx shows dynamic role logic, there is no evidence that ALL code was reverted to v29 state first. The backend main.mo shows extensive code but without v29 reference, verification is impossible. The footer should show 'v29' after revert per REQ-1, but then be updated to 'v31' per REQ-3, which is contradictory unless done sequentially.",
       "evidence": [
         "backend/main.mo",
-        "frontend/src/App.tsx",
-        "frontend/src/components/ProfileSetupDialog.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/ClientDetailPage.tsx",
-        "frontend/src/utils/urlParams.ts",
+        "frontend/src/components/AppLayout.tsx",
         "frontend-file-summaries.txt"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "First-time user profile completion modal (name/email) that blocks continuation until saved.",
-      "reason": "Not requested by REQ-1/REQ-2; BuildRequest non-goals disallow adding new features beyond restoring Version 23 behavior.",
+      "description": "Backend modifications to main.mo",
+      "reason": "BuildRequest explicitly constrains 'Do NOT change the backend at all', yet backend/main.mo appears in the modified files list with substantial code changes visible in the truncated diff.",
       "evidence": [
-        "frontend/src/components/ProfileSetupDialog.tsx",
-        "frontend/src/App.tsx",
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    },
-    {
-      "description": "Admin management capabilities exposed via React Query hooks (get/add/remove admins, my admin entry) and related cache invalidation behavior.",
-      "reason": "Not requested by REQ-1/REQ-2 and appears to be additional functionality beyond fixing the auth/layout hang.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    },
-    {
-      "description": "Client detail page IP address lookup via external service (api.ipify.org) and related activity logging/export behaviors.",
-      "reason": "Not requested by REQ-1/REQ-2; introduces/retains extra behavior beyond authentication/layout rollback.",
-      "evidence": [
-        "frontend/src/pages/ClientDetailPage.tsx"
-      ]
-    },
-    {
-      "description": "URL parameter parsing plus sessionStorage persistence utilities (including hash-query support).",
-      "reason": "Not requested by REQ-1/REQ-2; appears unrelated to restoring Version 23 auth/layout flow.",
-      "evidence": [
-        "frontend/src/utils/urlParams.ts"
-      ]
-    },
-    {
-      "description": "Always showing a fixed set of 5 Swiss mock clients in the clients list (per file summary).",
-      "reason": "Not requested by REQ-1/REQ-2 and could be additional/non-rollback behavior.",
-      "evidence": [
-        "frontend-file-summaries.txt"
+        "backend/main.mo"
       ]
     }
   ],
-  "confidence": 0.56,
+  "confidence": 0.75,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/AuthorizationGate.tsx",
-    "frontend/src/components/ProfileSetupDialog.tsx",
+    "frontend/src/components/AppLayout.tsx",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/ClientDetailPage.tsx",
-    "frontend/src/utils/urlParams.ts",
     "project_state.json"
   ]
 }

@@ -2,12 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-revert-the-application-frontend-and-backend-to-match-version-23-behavior-and-implementation-removing-regressing-any-changes-introduced-in-versions-24-26",
-      "featureTitle": "Revert the application (frontend and backend) to match Version 23 behavior and implementation, removing/regressing any changes introduced in Versions 24–26.",
+      "featureId": "feature-revert-all-code-to-version-29-state-which-had-working-admin-bootstrap-sidebar-user-info-name-and-user-badge-admin-table-showing-first-caller-as-admin-role-with-system-administrator-name-add-staff-form-visible-for-admin-and-footer-displaying-v29",
+      "featureTitle": "Revert all code to Version 29 state, which had working admin bootstrap, sidebar user info (name and 'User' badge), admin table showing first caller as 'Admin' role with 'System Administrator' name, Add Staff form visible for Admin, and footer displaying 'v29'",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/utils/urlParams.ts"
+        "frontend/src/components/AppLayout.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -23,12 +21,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-restore-the-version-23-authentication-authorization-layout-flow-so-that-after-internet-identity-login-completes-the-app-reliably-transitions-into-the-authorized-layout-without-hanging-on-or-regressing-the-verifying-authorization-stage",
-      "featureTitle": "Restore the Version 23 authentication/authorization + layout flow so that after Internet Identity login completes, the app reliably transitions into the authorized layout without hanging on or regressing the \"Verifying authorization...\" stage.",
+      "featureId": "feature-in-applayout-tsx-sidebar-user-info-section-replace-the-hardcoded-user-badge-with-dynamic-role-display-by-calling-usegetmyadminentry-with-enabled-identity-if-adminentry-exists-display-the-role-from-adminentry-e-g-admin-if-adminentry-is-null-or-undefined-still-loading-or-user-is-not-an-admin-fall-back-to-displaying-user",
+      "featureTitle": "In AppLayout.tsx sidebar user info section, replace the hardcoded 'User' badge with dynamic role display by calling useGetMyAdminEntry() with enabled: !!identity. If adminEntry exists, display the role from adminEntry (e.g. 'Admin'). If adminEntry is null or undefined (still loading or user is not an admin), fall back to displaying 'User'",
       "files": [
-        "frontend/src/components/AuthorizationGate.tsx",
-        "frontend/src/components/ProfileSetupDialog.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/components/AppLayout.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -40,6 +36,25 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-version-number-in-the-footer-from-v29-to-v31",
+      "featureTitle": "Update the version number in the footer from 'v29' to 'v31'",
+      "files": [
+        "frontend/src/components/AppLayout.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

@@ -228,6 +228,7 @@ export interface backendInterface {
     deleteClient(id: bigint): Promise<void>;
     getAdminEntries(): Promise<Array<AdminEntry>>;
     getAdminEntry(principal: Principal): Promise<AdminEntry>;
+    getAdminList(): Promise<Array<AdminEntry>>;
     getAllClients(): Promise<Array<ClientProfile>>;
     getAllowlistSize(): Promise<bigint>;
     getCallerAdminEntry(): Promise<AdminEntry | null>;
@@ -359,6 +360,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getAdminEntry(arg0);
             return from_candid_AdminEntry_n17(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getAdminList(): Promise<Array<AdminEntry>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAdminList();
+                return from_candid_vec_n16(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAdminList();
+            return from_candid_vec_n16(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAllClients(): Promise<Array<ClientProfile>> {

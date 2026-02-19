@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Roll back the Swiss Financial CRM (frontend + backend) to match Version 23 behavior, removing/regressing changes introduced in Versions 24–26, and restore the Version 23 login-to-authorized-layout flow.
+**Goal:** Revert to Version 29 functionality and add dynamic role display in the sidebar based on admin entry status.
 
 **Planned changes:**
-- Revert frontend and backend implementation to Version 23 behavior, ensuring no Version 24–26 functionality remains.
-- Restore Version 23 authentication/authorization + layout transition so that after Internet Identity login completes, the app reliably enters the authorized layout without hanging on “Verifying authorization...”.
-- Ensure the authorization loading screen text is in English and only appears while actor/authorization status is actively being fetched.
+- Restore all Version 29 working features (admin bootstrap, sidebar user info, admin table showing first caller as 'Admin' role with 'System Administrator' name, Add Staff form visibility)
+- Update sidebar user info in AppLayout.tsx to dynamically display role by calling useGetMyAdminEntry() with enabled: !!identity
+- Display role from adminEntry when it exists (e.g., 'Admin' or 'Staff'), otherwise fall back to 'User'
+- Update footer version number from 'v29' to 'v31'
 
-**User-visible outcome:** After login, users consistently transition from the login screen into the authorized app layout (sidebar + routed pages) without indefinite “Verifying authorization...” loading, and the overall app behaves as it did in Version 23.
+**User-visible outcome:** Admin users will see their actual role ('Admin' or 'Staff') displayed in the sidebar, while non-admin users will see 'User'. All Version 29 features remain functional, including admin bootstrap, client management, activity logs, KYC screening, and reports.

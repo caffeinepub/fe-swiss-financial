@@ -136,6 +136,7 @@ export interface _SERVICE {
   'deleteClient' : ActorMethod<[bigint], undefined>,
   'getAdminEntries' : ActorMethod<[], Array<AdminEntry>>,
   'getAdminEntry' : ActorMethod<[Principal], AdminEntry>,
+  'getAdminList' : ActorMethod<[], Array<AdminEntry>>,
   'getAllClients' : ActorMethod<[], Array<ClientProfile>>,
   'getAllowlistSize' : ActorMethod<[], bigint>,
   'getCallerAdminEntry' : ActorMethod<[], [] | [AdminEntry]>,

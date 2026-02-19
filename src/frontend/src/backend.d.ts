@@ -145,6 +145,7 @@ export interface backendInterface {
     deleteClient(id: bigint): Promise<void>;
     getAdminEntries(): Promise<Array<AdminEntry>>;
     getAdminEntry(principal: Principal): Promise<AdminEntry>;
+    getAdminList(): Promise<Array<AdminEntry>>;
     getAllClients(): Promise<Array<ClientProfile>>;
     getAllowlistSize(): Promise<bigint>;
     getCallerAdminEntry(): Promise<AdminEntry | null>;

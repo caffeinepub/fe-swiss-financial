@@ -1,64 +1,81 @@
 {
   "kind": "build_request",
-  "title": "Rollback application to Version 23 behavior",
-  "projectName": "Swiss Financial CRM",
-  "priority": "normal",
+  "title": "Revert to v29 and update sidebar role display logic",
+  "projectName": "FE Swiss Financial",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Revert the application (frontend and backend) to match Version 23 behavior and implementation, removing/regressing any changes introduced in Versions 24–26.",
+      "text": "Revert all code to Version 29 state, which had working admin bootstrap, sidebar user info (name and 'User' badge), admin table showing first caller as 'Admin' role with 'System Administrator' name, Add Staff form visible for Admin, and footer displaying 'v29'",
       "target": "both",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "All back to version 23."
+          "Version 30 broke the admin bootstrap and removed the sidebar user info. Version 29 was working correctly"
         ]
       },
       "acceptanceCriteria": [
-        "After deployment, the app’s behavior matches Version 23 (no Version 24–26 changes remain).",
-        "No new functionality introduced in Versions 24–26 is present after the rollback."
+        "Admin table shows the first caller as 'Admin' role with 'System Administrator' name",
+        "Add Staff form is visible for the Admin user",
+        "Sidebar displays user name and role badge above Logout button",
+        "All features from v29 are working: Edit Client, Activity Log, Export PDF, clients list, Dashboard, Onboarding, KYC Screening, Reports, Complete Your Profile modal"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Restore the Version 23 authentication/authorization + layout flow so that after Internet Identity login completes, the app reliably transitions into the authorized layout without hanging on or regressing the \"Verifying authorization...\" stage.",
+      "text": "In AppLayout.tsx sidebar user info section, replace the hardcoded 'User' badge with dynamic role display by calling useGetMyAdminEntry() with enabled: !!identity. If adminEntry exists, display the role from adminEntry (e.g. 'Admin'). If adminEntry is null or undefined (still loading or user is not an admin), fall back to displaying 'User'",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "All back to version 23."
+          "check if the user has an admin entry using useGetMyAdminEntry(). But CRITICALLY: this hook must have enabled: false until the identity/actor is ready",
+          "If adminEntry exists, display the role from adminEntry (e.g. 'Admin'). If adminEntry is null/undefined (still loading or user is not an admin), fall back to showing 'User'"
         ]
       },
       "acceptanceCriteria": [
-        "When a user logs in, the app proceeds from the login screen to the authorized app layout (sidebar + routed pages) without indefinite loading.",
-        "The authorization loading screen text remains in English and only appears while the actor and authorization status are actually being fetched."
+        "useGetMyAdminEntry() is called with { enabled: !!identity } to prevent premature queries",
+        "When adminEntry exists, the sidebar displays the role from adminEntry.role (e.g., 'Admin' or 'Staff')",
+        "When adminEntry is null or undefined, the sidebar displays 'User' as fallback",
+        "User name displays userProfile?.name directly without any extra characters appended"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Update the version number in the footer from 'v29' to 'v31'",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "The version in the footer should be updated to 'v31'"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Footer displays 'v31' instead of 'v29'"
       ]
     }
   ],
   "constraints": [
-    "Do not edit any files under frontend/immutablePaths (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
-    "Keep all Motoko logic in the single actor at backend/main.mo; only add backend/migration.mo if a state/schema upgrade is strictly required for the rollback."
+    "Do NOT change the backend at all",
+    "Do NOT change AdminManagementSection.tsx",
+    "Do NOT change the admin bootstrap logic",
+    "Do NOT change Edit Client, Activity Log, Export PDF, clients list, Dashboard, Onboarding, KYC Screening, Reports, or Complete Your Profile modal",
+    "The ONLY frontend file that should change from v29 is AppLayout.tsx (sidebar user info role display) and the footer version number"
   ],
   "nonGoals": [
-    "Adding new features beyond restoring Version 23 behavior.",
-    "Refactoring unrelated code or changing the visual design beyond what is necessary to match Version 23."
+    "Adding new features beyond the specified role display logic",
+    "Modifying any backend logic or data structures",
+    "Changing authentication or authorization flows",
+    "Altering admin management functionality",
+    "Updating any UI components other than AppLayout.tsx"
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

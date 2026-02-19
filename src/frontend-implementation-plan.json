@@ -1,65 +1,53 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Swiss Financial CRM — Frontend rollback to Version 23 auth/layout behavior",
+  "title": "Revert to v29 and update sidebar role display logic",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Rollback frontend behavior to Version 23 by regressing Version 24–26 UI flow changes and removing any newer auth/layout regressions.",
+      "summary": "Revert all code to Version 29 state with working admin bootstrap, sidebar user info, admin table, and footer displaying 'v29'",
       "acceptanceCriteria": [
-        "After deployment, the app’s behavior matches Version 23 (no Version 24–26 changes remain).",
-        "No new functionality introduced in Versions 24–26 is present after the rollback."
+        "Admin table shows the first caller as 'Admin' role with 'System Administrator' name",
+        "Add Staff form is visible for the Admin user",
+        "Sidebar displays user name and role badge above Logout button",
+        "All features from v29 are working: Edit Client, Activity Log, Export PDF, clients list, Dashboard, Onboarding, KYC Screening, Reports, Complete Your Profile modal"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Restore Version 23 routing + gate composition so authenticated users consistently land in the authorized layout flow (AuthGate -> AuthorizationGate -> AppLayout/Outlet) without relying on newer gating side-effects. Verify the component's usage instructions before implementing."
-        },
-        {
           "path": "frontend/src/components/AppLayout.tsx",
           "operation": "modify",
-          "description": "Regress layout behavior to Version 23 expectations (navigation + authorized shell), removing any Version 24–26-only UI/flow additions that could affect post-login transitions. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Rollback query-derived loading/fetched semantics to Version 23 patterns so the UI does not deadlock when the actor is unavailable or authorization queries error; ensure query states allow rendering fallback/error UI rather than indefinite loaders. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/utils/urlParams.ts",
-          "operation": "modify",
-          "description": "Regress any Version 24–26 URL/session secret parameter behavior not present in Version 23 (e.g., handling of hash/session persistence) to avoid interfering with Version 23 login/authorization flow. Verify the component's usage instructions before implementing."
+          "description": "Revert AppLayout.tsx to v29 state which includes the sidebar user info section displaying user name from getCallerUserProfile and a hardcoded 'User' badge above the Logout button. Ensure the footer displays 'v29' at this stage. This file contained the working sidebar structure that will be enhanced in REQ-2."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Restore Version 23 auth/authorization transition so Internet Identity login reliably enters the authorized layout without hanging on “Verifying authorization...”.",
+      "summary": "Replace hardcoded 'User' badge in AppLayout.tsx sidebar with dynamic role display using useGetMyAdminEntry() hook with enabled: !!identity",
       "acceptanceCriteria": [
-        "When a user logs in, the app proceeds from the login screen to the authorized app layout (sidebar + routed pages) without indefinite loading.",
-        "The authorization loading screen text remains in English and only appears while the actor and authorization status are actually being fetched."
+        "useGetMyAdminEntry() is called with { enabled: !!identity } to prevent premature queries",
+        "When adminEntry exists, the sidebar displays the role from adminEntry.role (e.g., 'Admin' or 'Staff')",
+        "When adminEntry is null or undefined, the sidebar displays 'User' as fallback",
+        "User name displays userProfile?.name directly without any extra characters appended"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/AuthorizationGate.tsx",
+          "path": "frontend/src/components/AppLayout.tsx",
           "operation": "modify",
-          "description": "Adjust loading/guard logic to show “Verifying authorization...” only while actor/authorization are actively fetching, and ensure the gate can exit the loading state into either children or a clear error/denied state when actor/auth data is missing or errored (no indefinite loader). Keep the loader text in English. Verify the component's usage instructions before implementing."
-        },
+          "description": "In the sidebar user info section of AppLayout.tsx, call useGetMyAdminEntry() hook with { enabled: !!identity } configuration to prevent queries before the identity/actor is ready. Replace the hardcoded 'User' badge with conditional logic: if adminEntry exists and has a role property, display that role value (e.g., 'Admin' or 'Staff'); otherwise, fall back to displaying 'User'. Ensure userProfile?.name is displayed directly in the user name area without appending extra characters. The authorization component's useGetMyAdminEntry hook must be used to fetch the current user's admin entry from the backend."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Update footer version number from 'v29' to 'v31'",
+      "acceptanceCriteria": [
+        "Footer displays 'v31' instead of 'v29'"
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/components/AppLayout.tsx",
           "operation": "modify",
-          "description": "Update authorization/profile query hooks to follow the selected authorization component guidance (actor-dependent enabling, accurate isLoading/isFetched), preventing deadlocks where isFetched never becomes true when the actor is null and avoiding UI hangs after login. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/ProfileSetupDialog.tsx",
-          "operation": "modify",
-          "description": "Align the profile setup modal display logic with Version 23 behavior and the selected authorization component guidance to prevent modal flash/hang during actor fetch and post-login transition (only show when authenticated and the profile query has truly resolved to null). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/AuthGate.tsx",
-          "operation": "modify",
-          "description": "Ensure the login screen remains a stable pre-auth state and does not introduce any Version 24–26 behavior that could block the post-login transition; keep messaging consistent and in English. Verify the component's usage instructions before implementing."
+          "description": "In the footer section of AppLayout.tsx, update the version number text from 'v29' to 'v31'. This is a simple string replacement in the footer display area."
         }
       ]
     }
